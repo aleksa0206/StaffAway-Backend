@@ -1,0 +1,26 @@
+{
+  "name": "staffaway",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aleksa0206/StaffAway.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/aleksa0206/StaffAway/issues"
+  },
+  "homepage": "https://github.com/aleksa0206/StaffAway#readme",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
