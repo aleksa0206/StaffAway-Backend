@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+   "migrate:latest": "node -r ts-node/register ./node_modules/knex/bin/cli.js --knexfile ./src/db/knex.js migrate:latest --env development",
+  "migrate:rollback": "node ./node_modules/knex/bin/cli.js --knexfile ./src/db/knex.js migrate:rollback --env development"
   },
   "repository": {
     "type": "git",
@@ -21,6 +23,13 @@
   },
   "homepage": "https://github.com/aleksa0206/StaffAway#readme",
   "devDependencies": {
+    "@types/node": "^25.0.10",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "knex": "^3.1.0",
+    "mysql2": "^3.16.2"
   }
 }
