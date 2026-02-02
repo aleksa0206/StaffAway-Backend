@@ -2,8 +2,6 @@ import type { Knex } from "knex";
 
 export async function up(knex: Knex): Promise<void> {
 
-    
-
   await knex.schema.createTable("users", (t) => {
     t.increments("id").primary();
     t.string("email", 255).notNullable().unique();
