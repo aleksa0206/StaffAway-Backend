@@ -2,12 +2,12 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "target": "ES2020",
+    "target": "ES2022",
     "module": "commonjs",
+    "moduleResolution": "bundler", 
     "strict": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "moduleResolution": "node"
   },
   "include": ["src", "knexfile.js"],
 }

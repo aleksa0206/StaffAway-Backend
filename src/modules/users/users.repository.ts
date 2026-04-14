@@ -17,3 +17,6 @@ export class UsersRepository {
     return created;
   }
 }
+
+// Singleton instance - DODAJ OVO:
+export const usersRepository = new UsersRepository();
