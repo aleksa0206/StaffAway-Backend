@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "dist",
-    "target": "ES2020",
-    "module": "commonjs",
+    "target": "ES2022",
+    "module": "ES2022",                    // ← Promeni u ES2022
+    "moduleResolution": "bundler",         // ← Ostavi bundler
+    "rootDir": "./src",
+    "outDir": "./dist/out-tsc",
+    "forceConsistentCasingInFileNames": true,
     "strict": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "moduleResolution": "node"
-  },
-  "include": ["src", "knexfile.js"],
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  }
 }
