@@ -1,5 +1,6 @@
 const path = require("path");
-require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
+require("dotenv").config({ path: path.resolve(__dirname, ".env") });
+require("ts-node").register(); // ← DODAJ OVO
 
 module.exports = {
   development: {
@@ -12,7 +13,7 @@ module.exports = {
       database: process.env.DB_NAME,
     },
     migrations: {
-      directory: path.resolve(__dirname, "migrations"),
+      directory: path.resolve(__dirname, "src/database/migrations"),
       extension: "ts",
     },
   },
