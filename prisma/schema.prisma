@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  Employee
+  Manager
+  Hr
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  managerId    Int?
+  manager      User?    @relation("ManagerHierarchy", fields: [managerId], references: [id])
+  teamMembers  User[]   @relation("ManagerHierarchy")
+  hireDate     DateTime
+}
