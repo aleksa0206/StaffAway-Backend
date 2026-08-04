@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -13,6 +12,12 @@ enum Role {
   Hr
 }
 
+enum LeaveStatus { 
+  Pending
+  Approval
+  Rejected
+}
+
 model User {
   id           Int      @id @default(autoincrement())
   firstName    String
@@ -23,5 +28,109 @@ model User {
   managerId    Int?
   manager      User?    @relation("ManagerHierarchy", fields: [managerId], references: [id])
   teamMembers  User[]   @relation("ManagerHierarchy")
+  submittedRequests LeaveRequest[] @relation("SubmittedRequests")
+  approvedRequests LeaveRequest[] @relation("ApprovedRequests")
+  leaveBalances LeaveBalance[]
+  departmentId Int?
+  department Department? @relation(fields: [departmentId], references: [id])
+  workSchedule WorkSchedule?
+  refreshTokens RefreshToken[]
   hireDate     DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LeaveType {
+  id Int  @id @default(autoincrement())
+  name String 
+  requiresApproval Boolean
+  countsTowardBalance Boolean
+  leaveRequests LeaveRequest[]
+  leaveBalances LeaveBalance[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Holiday { 
+  id Int @id @default(autoincrement())
+  name String 
+  date DateTime
+  isRecurring Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ }
+
+
+model LeaveRequest { 
+  id Int @id @default(autoincrement())
+  startDate DateTime
+  endDate DateTime 
+  totalDays Int 
+  status LeaveStatus
+  comment String? 
+  userId Int 
+  user User @relation("SubmittedRequests", fields: [userId], references: [id])
+  approvedById Int?
+  approvedBy User? @relation("ApprovedRequests", fields: [approvedById], references: [id])
+  leaveTypeId Int
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id])
+  attachments Attachment[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LeaveBalance { 
+  id Int @id @default(autoincrement())
+  userId Int  
+  user User @relation(fields: [userId], references: [id])
+  leaveTypeId Int
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id])
+  year Int 
+  totalDays Int 
+  usedDays Int 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([userId,leaveTypeId,year])
+}
+
+model Department { 
+  id Int @id @default(autoincrement())
+  name String @unique
+  users User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WorkSchedule{ 
+  id Int @id @default(autoincrement())
+  userId Int @unique
+  user User @relation(fields: [userId], references: [id])
+  hoursPerWeek Int
+  isPartTime Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RefreshToken{ 
+  id Int @id @default(autoincrement())
+  token String @unique
+  userId Int
+  user User @relation(fields: [userId], references: [id])
+  expiresAt DateTime 
+  revoked Boolean @default(false)
+  createdAt DateTime @default(now())
+}
+
+
+model Attachment { 
+  id Int @id @default(autoincrement())
+  leaveRequestId Int 
+  leaveRequest LeaveRequest @relation(fields: [leaveRequestId], references: [id])
+  fileName String 
+  filePath String 
+  uploadedAt DateTime @default(now())
+}
+
+model StatusHistory { 
+  id Int 
 }
