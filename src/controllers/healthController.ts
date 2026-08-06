@@ -1,10 +1,5 @@
-import { Request, Response } from 'express'
-
+import { Request, Response } from 'express';
 
 export function healthHandler(req: Request, res: Response) {
-    res.json({message:"health"})
+    res.json({ message: 'health' });
 }
-
-
-
-
