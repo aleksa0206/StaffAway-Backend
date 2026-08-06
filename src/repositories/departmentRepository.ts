@@ -1,22 +1,22 @@
 import { Department } from '@prisma/client';
 import { prisma } from '../config/prismaClient';
 
-export async function findAll(): Promise<Department[]> {
+export async function findAllDepartments(): Promise<Department[]> {
     return await prisma.department.findMany();
 }
 
-export async function findById(id: number): Promise<Department | null> {
+export async function findDepartmentById(id: number): Promise<Department | null> {
     return await prisma.department.findUnique({ where: { id } });
 }
 
-export async function create(data: {
+export async function createDepartment(data: {
     name: string;
     companyId: number;
 }): Promise<Department> {
     return await prisma.department.create({ data });
 }
 
-export async function update(
+export async function updateDepartment(
     id: number,
     data: {
         name?: string;
@@ -26,6 +26,6 @@ export async function update(
     return await prisma.department.update({ where: { id }, data });
 }
 
-export async function remove(id: number): Promise<Department> {
+export async function removeDepartment(id: number): Promise<Department> {
     return await prisma.department.delete({ where: { id } });
 }
