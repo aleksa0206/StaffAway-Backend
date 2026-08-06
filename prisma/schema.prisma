@@ -6,6 +6,27 @@ datasource db {
   provider = "mysql"
 }
 
+//**************NACIN PISANJA**************//
+//* model Example {
+//*   id       Int
+//*   Int
+//*   String
+//*   Boolean
+//*   DateTime
+//*   Enum
+
+//*   createdAt
+//*   updatedAt
+
+//*   example example?  @relation("ExampleHierarchy", fields: [exampleId], references: [id])
+//*   example example?  @relation(fields: [exampleId], references: [id])
+//*   example Example[] @relation("ExampleHierarchy")
+//*   example example[]
+
+//*   @@unique([exampleId, example])
+//* }
+//***************************************//
+
 enum Role {
   Employee
   Manager
@@ -26,174 +47,255 @@ enum NotificationType {
 }
 
 model User {
-  id                Int             @id @default(autoincrement())
-  firstName         String
-  lastName          String
-  email             String
-  passwordHash      String
-  role              Role
-  managerId         Int?
+  id           Int      @id @default(autoincrement())
+  companyId    Int
+  managerId    Int?
+  departmentId Int?
+  firstName    String
+  lastName     String
+  email        String
+  passwordHash String
+  hireDate     DateTime
+  role         Role
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   manager           User?           @relation("ManagerHierarchy", fields: [managerId], references: [id])
+  department        Department?     @relation(fields: [departmentId], references: [id])
+  company           Company         @relation(fields: [companyId], references: [id])
   teamMembers       User[]          @relation("ManagerHierarchy")
+  statusChanges     StatusHistory[] @relation("StatusChanges")
   submittedRequests LeaveRequest[]  @relation("SubmittedRequests")
   approvedRequests  LeaveRequest[]  @relation("ApprovedRequests")
-  leaveBalances     LeaveBalance[]
-  departmentId      Int?
-  department        Department?     @relation(fields: [departmentId], references: [id])
-  workSchedule      WorkSchedule?
   refreshTokens     RefreshToken[]
-  statusChanges     StatusHistory[] @relation("StatusChanges")
   notifications     Notification[]
   auditLogs         AuditLog[]
-  companyId         Int
-  company           Company         @relation(fields: [companyId], references: [id])
-  hireDate          DateTime
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  leaveBalances     LeaveBalance[]
+  comments          Comment[]
+  workSchedule      WorkSchedule?
 
   @@unique([companyId, email])
 }
 
 model LeaveType {
-  id                  Int            @id @default(autoincrement())
+  id                  Int     @id @default(autoincrement())
+  companyId           Int
   name                String
   requiresApproval    Boolean
   countsTowardBalance Boolean
-  leaveRequests       LeaveRequest[]
-  leaveBalances       LeaveBalance[]
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company       Company        @relation(fields: [companyId], references: [id])
+  leaveRequests LeaveRequest[]
+  leaveBalances LeaveBalance[]
 }
 
 model Holiday {
   id          Int      @id @default(autoincrement())
+  companyId   Int
   name        String
-  date        DateTime
   isRecurring Boolean
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  date        DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
 }
 
 model LeaveRequest {
-  id            Int             @id @default(autoincrement())
-  startDate     DateTime
-  endDate       DateTime
-  totalDays     Int
-  status        LeaveStatus
-  comment       String?
-  userId        Int
+  id           Int         @id @default(autoincrement())
+  totalDays    Int
+  userId       Int
+  leaveTypeId  Int
+  companyId    Int
+  approvedById Int?
+  comment      String?
+  status       LeaveStatus
+
+  startDate DateTime
+  endDate   DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   user          User            @relation("SubmittedRequests", fields: [userId], references: [id])
-  approvedById  Int?
   approvedBy    User?           @relation("ApprovedRequests", fields: [approvedById], references: [id])
-  leaveTypeId   Int
   leaveType     LeaveType       @relation(fields: [leaveTypeId], references: [id])
+  company       Company         @relation(fields: [companyId], references: [id])
   attachments   Attachment[]
   statusHistory StatusHistory[]
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  comments      Comment[]
 }
 
 model LeaveBalance {
-  id          Int       @id @default(autoincrement())
+  id          Int @id @default(autoincrement())
   userId      Int
-  user        User      @relation(fields: [userId], references: [id])
   leaveTypeId Int
-  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id])
   year        Int
   totalDays   Int
   usedDays    Int
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  companyId   Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id])
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id])
+  company   Company   @relation(fields: [companyId], references: [id])
 
   @@unique([userId, leaveTypeId, year])
 }
 
 model Department {
-  id        Int      @id @default(autoincrement())
-  name      String
-  users     User[]
+  id        Int    @id @default(autoincrement())
   companyId Int
-  company   Company  @relation(fields: [companyId], references: [id])
+  name      String
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  users   User[]
 }
 
 model WorkSchedule {
-  id           Int      @id @default(autoincrement())
-  userId       Int      @unique
-  user         User     @relation(fields: [userId], references: [id])
+  id           Int @id @default(autoincrement())
+  userId       Int @unique
+  companyId    Int
   hoursPerWeek Int
-  isPartTime   Boolean
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+
+  isPartTime Boolean
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
 }
 
 model RefreshToken {
   id        Int      @id @default(autoincrement())
-  token     String   @unique
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  expiresAt DateTime
+  token     String   @unique
   revoked   Boolean  @default(false)
+  expiresAt DateTime
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
 }
 
 model Attachment {
-  id             Int          @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   leaveRequestId Int
-  leaveRequest   LeaveRequest @relation(fields: [leaveRequestId], references: [id])
   fileName       String
   filePath       String
-  uploadedAt     DateTime     @default(now())
+  uploadedAt     DateTime @default(now())
+
+  leaveRequest LeaveRequest @relation(fields: [leaveRequestId], references: [id])
 }
 
 model StatusHistory {
-  id             Int          @id @default(autoincrement())
+  id             Int         @id @default(autoincrement())
   leaveRequestId Int
-  leaveRequest   LeaveRequest @relation(fields: [leaveRequestId], references: [id])
   changedById    Int
-  changedBy      User         @relation("StatusChanges", fields: [changedById], references: [id])
+  companyId      Int
+  changedAt      DateTime    @default(now())
   oldStatus      LeaveStatus
   newStatus      LeaveStatus
-  changedAt      DateTime     @default(now())
+
+  changedBy    User         @relation("StatusChanges", fields: [changedById], references: [id])
+  company      Company      @relation(fields: [companyId], references: [id])
+  leaveRequest LeaveRequest @relation(fields: [leaveRequestId], references: [id])
 }
 
 model Notification {
   id        Int              @id @default(autoincrement())
   userId    Int
-  user      User             @relation(fields: [userId], references: [id])
-  type      NotificationType
   message   String
   isRead    Boolean          @default(false)
   createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  type      NotificationType
+
+  user User @relation(fields: [userId], references: [id])
 }
 
 model AuditLog {
   id            Int      @id @default(autoincrement())
-  entityType    String
-  entityId      Int
-  action        String
   performedById Int
-  performedBy   User     @relation(fields: [performedById], references: [id])
+  entityId      Int
+  companyId     Int
+  action        String
+  entityType    String
   oldValue      String?
   newValue      String?
   createdAt     DateTime @default(now())
+
+  company     Company @relation(fields: [companyId], references: [id])
+  performedBy User    @relation(fields: [performedById], references: [id])
 }
 
 model CompanySettings {
-  id                     Int      @id @default(autoincrement())
+  id                     Int     @id @default(autoincrement())
+  minDaysNoticeForLeave  Int     @default(1)
+  defaultAnnualLeaveDays Int     @default(20)
+  companyId              Int     @unique
   companyName            String
-  minDaysNoticeForLeave  Int      @default(1)
-  defaultAnnualLeaveDays Int      @default(20)
-  workWeekStartsMonday   Boolean  @default(true)
-  updatedAt              DateTime @updatedAt
+  workWeekStartsMonday   Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
 }
 
 model Company {
-  id          Int          @id @default(autoincrement())
-  name        String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  users       User[]
-  departments Department[]
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users           User[]
+  departments     Department[]
+  leaveTypes      LeaveType[]
+  holidays        Holiday[]
+  leaveRequests   LeaveRequest[]
+  leaveBalances   LeaveBalance[]
+  workSchedules   WorkSchedule[]
+  statusHistories StatusHistory[]
+  auditLogs       AuditLog[]
+  companySettings CompanySettings?
+  comments        Comment[]
+  apiKeys         ApiKey[]
+}
+
+model Comment {
+  id             Int      @id @default(autoincrement())
+  leaveRequestId Int
+  authorId       Int
+  companyId      Int
+  text           String
+  createdAt      DateTime @default(now())
+
+  company      Company      @relation(fields: [companyId], references: [id])
+  leaveRequest LeaveRequest @relation(fields: [leaveRequestId], references: [id])
+  author       User         @relation(fields: [authorId], references: [id])
+}
+
+model ApiKey {
+  id         Int       @id @default(autoincrement())
+  companyId  Int
+  key        String    @unique
+  name       String
+  revoked    Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  company Company @relation(fields: [companyId], references: [id])
 }
