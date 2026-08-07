@@ -11,6 +11,9 @@ import workScheduleRoutes from "./routes/workScheduleRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import auditLogRoutes from "./routes/auditLogRoutes";
 import refreshTokenRoutes from "./routes/refreshTokenRoutes";
+import attachmentRoutes from "./routes/attachementRoutes";
+import statusHistoryRoutes from "./routes/statusHistoryRoutes";
+import leaveRequestRoutes from "./routes/leaveRequestRoutes";
 
 const app = express();
 const port = process.env.PORT;
@@ -27,6 +30,9 @@ app.use(workScheduleRoutes);
 app.use(notificationRoutes);
 app.use(auditLogRoutes);
 app.use(refreshTokenRoutes);
+app.use(attachmentRoutes);
+app.use(statusHistoryRoutes);
+app.use(leaveRequestRoutes);
 
 app.listen(port, () => {
   console.log(`server radi na portu ${port}`);
