@@ -14,6 +14,9 @@ import refreshTokenRoutes from "./routes/refreshTokenRoutes";
 import attachmentRoutes from "./routes/attachementRoutes";
 import statusHistoryRoutes from "./routes/statusHistoryRoutes";
 import leaveRequestRoutes from "./routes/leaveRequestRoutes";
+import leaveBalanceRoutes from "./routes/leaveBalanceRoutes";
+import apiKeyRoutes from "./routes/apiKeyRoutes";
+import companySettingsRoutes from "./routes/companySettingsRoutes";
 
 const app = express();
 const port = process.env.PORT;
@@ -33,6 +36,9 @@ app.use(refreshTokenRoutes);
 app.use(attachmentRoutes);
 app.use(statusHistoryRoutes);
 app.use(leaveRequestRoutes);
+app.use(leaveBalanceRoutes);
+app.use(companySettingsRoutes);
+app.use(apiKeyRoutes);
 
 app.listen(port, () => {
   console.log(`server radi na portu ${port}`);

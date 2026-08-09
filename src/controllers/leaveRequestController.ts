@@ -51,6 +51,7 @@ export async function createLeaveRequestHandler(req: Request, res: Response) {
     res.status(500).json({ error: err.message });
   }
 }
+
 export async function updateLeaveRequestHandler(req: Request, res: Response) {
   try {
     const leaveRequestId = Number(req.params.leaveRequestId);
@@ -64,20 +65,18 @@ export async function updateLeaveRequestHandler(req: Request, res: Response) {
       leaveTypeId,
       companyId,
     } = req.body;
-
-    const updateData: Prisma.LeaveRequestUncheckedUpdateInput = {};
-    if (startDate !== undefined) updateData.startDate = new Date(startDate);
-    if (endDate !== undefined) updateData.endDate = new Date(endDate);
-    if (totalDays !== undefined) updateData.totalDays = totalDays;
-    if (status !== undefined) updateData.status = status;
-    if (comment !== undefined) updateData.comment = comment;
-    if (approvedById !== undefined) updateData.approvedById = approvedById;
-    if (leaveTypeId !== undefined) updateData.leaveTypeId = leaveTypeId;
-    if (companyId !== undefined) updateData.companyId = companyId;
-
     const leaveRequest = await leaveRequestService.updateLeaveRequest(
       leaveRequestId,
-      updateData,
+      {
+        startDate: startDate && new Date(startDate),
+        endDate: endDate && new Date(endDate),
+        totalDays,
+        status,
+        comment,
+        approvedById,
+        leaveTypeId,
+        companyId,
+      },
     );
     res.json(leaveRequest);
   } catch (err: any) {

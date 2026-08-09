@@ -1,16 +1,12 @@
-import { LeaveRequest, Prisma } from "@prisma/client";
+import { LeaveRequest } from "@prisma/client";
 import { prisma } from "../config/prismaClient";
 
 export async function findAllLeaveRequests(): Promise<LeaveRequest[]> {
   return await prisma.leaveRequest.findMany();
 }
 
-export async function findLeaveRequestById(
-  leaveRequestId: number,
-): Promise<LeaveRequest | null> {
-  return await prisma.leaveRequest.findUnique({
-    where: { id: leaveRequestId },
-  });
+export async function findLeaveRequestById(leaveRequestId: number): Promise<LeaveRequest | null> {
+  return await prisma.leaveRequest.findUnique({ where: { id: leaveRequestId } });
 }
 
 export async function createLeaveRequest(data: {
@@ -29,16 +25,20 @@ export async function createLeaveRequest(data: {
 
 export async function updateLeaveRequest(
   leaveRequestId: number,
-  data: Prisma.LeaveRequestUncheckedUpdateInput,
+  data: {
+    startDate?: Date;
+    endDate?: Date;
+    totalDays?: number;
+    status?: "Pending" | "Approval" | "Rejected";
+    comment?: string;
+    approvedById?: number;
+    leaveTypeId?: number;
+    companyId?: number;
+  },
 ): Promise<LeaveRequest> {
-  return await prisma.leaveRequest.update({
-    where: { id: leaveRequestId },
-    data,
-  });
+  return await prisma.leaveRequest.update({ where: { id: leaveRequestId }, data });
 }
 
-export async function removeLeaveRequest(
-  leaveRequestId: number,
-): Promise<LeaveRequest> {
+export async function removeLeaveRequest(leaveRequestId: number): Promise<LeaveRequest> {
   return await prisma.leaveRequest.delete({ where: { id: leaveRequestId } });
 }

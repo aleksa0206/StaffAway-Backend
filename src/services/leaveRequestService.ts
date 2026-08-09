@@ -1,5 +1,4 @@
 import * as leaveRequestRepository from "../repositories/leaveRequestRepository";
-import type { Prisma } from "@prisma/client";
 
 export async function getAllLeaveRequests() {
   return await leaveRequestRepository.findAllLeaveRequests();
@@ -22,9 +21,19 @@ export async function createLeaveRequest(data: {
 }) {
   return await leaveRequestRepository.createLeaveRequest(data);
 }
+
 export async function updateLeaveRequest(
   leaveRequestId: number,
-  data: Prisma.LeaveRequestUncheckedUpdateInput,
+  data: {
+    startDate?: Date;
+    endDate?: Date;
+    totalDays?: number;
+    status?: "Pending" | "Approval" | "Rejected";
+    comment?: string;
+    approvedById?: number;
+    leaveTypeId?: number;
+    companyId?: number;
+  },
 ) {
   return await leaveRequestRepository.updateLeaveRequest(leaveRequestId, data);
 }
