@@ -17,3 +17,9 @@ export async function create(data: {
 }) {
     return await prisma.user.create({ data });
 }
+
+export async function findUserByEmail(email: string) {
+  return await prisma.user.findFirst({ where: { email } });
+}
+
+
