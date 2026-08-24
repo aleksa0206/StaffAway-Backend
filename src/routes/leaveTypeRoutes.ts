@@ -6,13 +6,14 @@ import {
   updateLeaveTypeHandler,
   deleteLeaveTypeHandler,
 } from "../controllers/leaveTypeController";
+import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.get("/leave-types", getAllLeaveTypesHandler);
-router.get("/leave-types/:leaveTypeId", getLeaveTypeByIdHandler);
-router.post("/leave-types", createLeaveTypeHandler);
-router.put("/leave-types/:leaveTypeId", updateLeaveTypeHandler);
-router.delete("/leave-types/:leaveTypeId", deleteLeaveTypeHandler);
+router.get("/leave-types",authMiddleware, getAllLeaveTypesHandler);
+router.get("/leave-types/:leaveTypeId",authMiddleware, getLeaveTypeByIdHandler);
+router.post("/leave-types",authMiddleware, createLeaveTypeHandler);
+router.put("/leave-types/:leaveTypeId",authMiddleware, updateLeaveTypeHandler);
+router.delete("/leave-types/:leaveTypeId",authMiddleware, deleteLeaveTypeHandler);
 
 export default router;

@@ -5,12 +5,13 @@ import {
   createAttachmentHandler,
   deleteAttachmentHandler,
 } from "../controllers/attachmentController";
+import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.get("/attachments", getAllAttachmentsHandler);
-router.get("/attachments/:attachmentId", getAttachmentByIdHandler);
-router.post("/attachments", createAttachmentHandler);
-router.delete("/attachments/:attachmentId", deleteAttachmentHandler);
+router.get("/attachments",authMiddleware, getAllAttachmentsHandler);
+router.get("/attachments/:attachmentId",authMiddleware, getAttachmentByIdHandler);
+router.post("/attachments",authMiddleware, createAttachmentHandler);
+router.delete("/attachments/:attachmentId",authMiddleware, deleteAttachmentHandler);
 
 export default router;

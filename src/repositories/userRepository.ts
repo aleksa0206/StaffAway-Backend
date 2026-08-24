@@ -1,8 +1,8 @@
 import { User } from '@prisma/client';
 import { prisma } from '../config/prismaClient';
 
-export async function findAll(): Promise<User[]> {
-    return await prisma.user.findMany();
+export async function findAll(companyId: number): Promise<User[]> {
+    return await prisma.user.findMany({ where: { companyId } });
 }
 
 export async function create(data: {
@@ -19,7 +19,5 @@ export async function create(data: {
 }
 
 export async function findUserByEmail(email: string) {
-  return await prisma.user.findFirst({ where: { email } });
+    return await prisma.user.findFirst({ where: { email } });
 }
-
-

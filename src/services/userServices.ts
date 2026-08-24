@@ -1,8 +1,8 @@
 import bcrypt from 'bcrypt';
 import * as userRepository from '../repositories/userRepository';
 
-export async function getAllUsers() {
-    return await userRepository.findAll();
+export async function getAllUsers(companyId: number) {
+    return await userRepository.findAll(companyId);
 }
 
 export async function createUser(input: {

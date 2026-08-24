@@ -1,14 +1,15 @@
-import { Router } from "express";
+import { Router } from 'express';
 import {
-  getCompanySettingsHandler,
-  createCompanySettingsHandler,
-  updateCompanySettingsHandler,
-} from "../controllers/companySettingsController";
+    createCompanySettingsHandler,
+    getCompanySettingsHandler,
+    updateCompanySettingsHandler,
+} from '../controllers/companySettingsController';
+import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.get("/settings", getCompanySettingsHandler);
-router.post("/settings", createCompanySettingsHandler);
-router.put("/settings", updateCompanySettingsHandler);
+router.get('/settings', authMiddleware, getCompanySettingsHandler);
+router.post('/settings', authMiddleware, createCompanySettingsHandler);
+router.put('/settings', authMiddleware, updateCompanySettingsHandler);
 
 export default router;

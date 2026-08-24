@@ -3,7 +3,13 @@ import * as userService from '../services/userServices';
 
 export async function getAllUsersHandler(req: Request, res: Response) {
     try {
-        const users = await userService.getAllUsers();
+        if (!req.user) {
+            return res.status(401).json({ error: 'Niste autentifikovani' });
+        }
+
+        const companyId = req.user.companyId;
+
+        const users = await userService.getAllUsers(companyId);
         res.json(users);
     } catch (err: any) {
         res.status(500).json({ error: err.message });

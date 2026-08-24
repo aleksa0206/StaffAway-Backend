@@ -6,13 +6,14 @@ import {
   updateHolidayHandler,
   deleteHolidayHandler,
 } from "../controllers/holidayController";
+import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.get("/holidays", getAllHolidaysHandler);
-router.get("/holidays/:holidayId", getHolidayByIdHandler);
-router.post("/holidays", createHolidayHandler);
-router.put("/holidays/:holidayId", updateHolidayHandler);
-router.delete("/holidays/:holidayId", deleteHolidayHandler);
+router.get("/holidays",authMiddleware, getAllHolidaysHandler);
+router.get("/holidays/:holidayId",authMiddleware, getHolidayByIdHandler);
+router.post("/holidays",authMiddleware, createHolidayHandler);
+router.put('/holidays/:holidayId', authMiddleware, updateHolidayHandler);
+router.delete("/holidays/:holidayId",authMiddleware, deleteHolidayHandler);
 
 export default router;

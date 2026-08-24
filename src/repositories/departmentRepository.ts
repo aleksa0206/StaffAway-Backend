@@ -1,11 +1,15 @@
 import { Department } from '@prisma/client';
 import { prisma } from '../config/prismaClient';
 
-export async function findAllDepartments(): Promise<Department[]> {
-    return await prisma.department.findMany();
+export async function findAllDepartments(
+    companyId: number,
+): Promise<Department[]> {
+    return await prisma.department.findMany({ where: { companyId } });
 }
 
-export async function findDepartmentById(id: number): Promise<Department | null> {
+export async function findDepartmentById(
+    id: number,
+): Promise<Department | null> {
     return await prisma.department.findUnique({ where: { id } });
 }
 
