@@ -3,6 +3,9 @@ import * as companySettingsService from "../services/companySettingsService";
 
 export async function getCompanySettingsHandler(req: Request, res: Response) {
   try {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Niste autentifikovani' });
+    }
     const companyId = req.user.companyId;
     const settings = await companySettingsService.getCompanySettings(companyId);
     res.json(settings);
@@ -16,6 +19,9 @@ export async function createCompanySettingsHandler(
   res: Response,
 ) {
   try {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Niste autentifikovani' });
+    }
     const companyId = req.user.companyId;
     const {
       companyName,
@@ -41,6 +47,9 @@ export async function updateCompanySettingsHandler(
   res: Response,
 ) {
   try {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Niste autentifikovani' });
+    }
     const companyId = req.user.companyId;
     const {
       companyName,

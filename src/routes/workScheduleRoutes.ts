@@ -6,13 +6,14 @@ import {
   updateWorkScheduleHandler,
   deleteWorkScheduleHandler,
 } from "../controllers/workScheduleController";
+import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.get("/work-schedules", getAllWorkSchedulesHandler);
-router.get("/work-schedules/:workScheduleId", getWorkScheduleByIdHandler);
-router.post("/work-schedules", createWorkScheduleHandler);
-router.put("/work-schedules/:workScheduleId", updateWorkScheduleHandler);
-router.delete("/work-schedules/:workScheduleId", deleteWorkScheduleHandler);
+router.get("/work-schedules",authMiddleware, getAllWorkSchedulesHandler);
+router.get("/work-schedules/:workScheduleId",authMiddleware, getWorkScheduleByIdHandler);
+router.post("/work-schedules",authMiddleware, createWorkScheduleHandler);
+router.put("/work-schedules/:workScheduleId",authMiddleware, updateWorkScheduleHandler);
+router.delete("/work-schedules/:workScheduleId",authMiddleware, deleteWorkScheduleHandler);
 
 export default router;

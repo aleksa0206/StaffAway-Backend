@@ -1,8 +1,8 @@
 import { StatusHistory } from "@prisma/client";
 import { prisma } from "../config/prismaClient";
 
-export async function findAllStatusHistories(): Promise<StatusHistory[]> {
-  return await prisma.statusHistory.findMany();
+export async function findAllStatusHistories(companyId: number): Promise<StatusHistory[]> {
+  return await prisma.statusHistory.findMany({where: {companyId}});
 }
 
 export async function findStatusHistoryById(

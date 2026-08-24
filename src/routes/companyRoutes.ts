@@ -1,18 +1,19 @@
-import { Router } from "express";
+import { Router } from 'express';
 import {
-  getAllCompaniesHandler,
-  getCompanyByIdHandler,
-  createCompanyHandler,
-  updateCompanyHandler,
-  deleteCompanyHandler,
-} from "../controllers/companyController";
+    createCompanyHandler,
+    deleteCompanyHandler,
+    getAllCompaniesHandler,
+    getCompanyByIdHandler,
+    updateCompanyHandler,
+} from '../controllers/companyController';
+import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.get("/companies", getAllCompaniesHandler);
-router.get("/companies/:companyId", getCompanyByIdHandler);
-router.post("/companies", createCompanyHandler);
-router.put("/companies/:companyId", updateCompanyHandler);
-router.delete("/companies/:companyId", deleteCompanyHandler);
+router.get('/companies', authMiddleware, getAllCompaniesHandler);
+router.get('/companies/:companyId', authMiddleware, getCompanyByIdHandler);
+router.post('/companies', authMiddleware, createCompanyHandler);
+router.put('/companies/:companyId', authMiddleware, updateCompanyHandler);
+router.delete('/companies/:companyId', authMiddleware, deleteCompanyHandler);
 
 export default router;

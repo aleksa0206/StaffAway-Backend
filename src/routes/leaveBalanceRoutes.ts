@@ -6,13 +6,14 @@ import {
   updateLeaveBalanceHandler,
   deleteLeaveBalanceHandler,
 } from "../controllers/leaveBalanceController";
+import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.get("/leave-balances", getAllLeaveBalancesHandler);
-router.get("/leave-balances/:leaveBalanceId", getLeaveBalanceByIdHandler);
-router.post("/leave-balances", createLeaveBalanceHandler);
-router.put("/leave-balances/:leaveBalanceId", updateLeaveBalanceHandler);
-router.delete("/leave-balances/:leaveBalanceId", deleteLeaveBalanceHandler);
+router.get("/leave-balances",authMiddleware, getAllLeaveBalancesHandler);
+router.get("/leave-balances/:leaveBalanceId",authMiddleware, getLeaveBalanceByIdHandler);
+router.post("/leave-balances",authMiddleware, createLeaveBalanceHandler);
+router.put("/leave-balances/:leaveBalanceId",authMiddleware, updateLeaveBalanceHandler);
+router.delete("/leave-balances/:leaveBalanceId",authMiddleware, deleteLeaveBalanceHandler);
 
 export default router;

@@ -1,34 +1,48 @@
-import * as holidayRepository from "../repositories/holidayRepository";
+import * as holidayRepository from '../repositories/holidayRepository';
 
-export async function getAllHolidays() {
-  return await holidayRepository.findAllHolidays();
+export async function getAllHolidays(companyId: number) {
+    return await holidayRepository.findAllHolidays(companyId);
 }
 
-export async function getHolidayById(holidayId: number) {
-  return await holidayRepository.findHolidayById(holidayId);
+export async function getHolidayById(holidayId: number, companyId: number) {
+    const holiday = await holidayRepository.findHolidayById(holidayId);
+    if (!holiday || holiday.companyId !== companyId) {
+        return null;
+    }
+    return holiday;
 }
 
 export async function createHoliday(data: {
-  name: string;
-  companyId: number;
-  isRecurring: boolean;
-  date: Date;
+    name: string;
+    date: Date;
+    isRecurring: boolean;
+    companyId: number;
 }) {
-  return await holidayRepository.createHoliday(data);
+    return await holidayRepository.createHoliday(data);
 }
 
 export async function updateHoliday(
-  holidayId: number,
-  data: {
-    name?: string;
-    companyId?: number;
-    isRecurring?: boolean;
-    date?: Date;
-  },
+    holidayId: number,
+    companyId: number,
+    data: { name?: string; date?: Date; isRecurring?: boolean },
 ) {
-  return await holidayRepository.updateHoliday(holidayId, data);
+    const holiday = await holidayRepository.findHolidayById(holidayId);
+    if (!holiday) {
+        throw new Error('Praznik ne postoji');
+    }
+    if (holiday.companyId !== companyId) {
+        throw new Error('Nemate pravo pristupa ovom prazniku');
+    }
+    return await holidayRepository.updateHoliday(holidayId, data);
 }
 
-export async function deleteHoliday(holidayId: number) {
-  return await holidayRepository.removeHoliday(holidayId);
+export async function deleteHoliday(holidayId: number, companyId: number) {
+    const holiday = await holidayRepository.findHolidayById(holidayId);
+    if (!holiday) {
+        throw new Error('Praznik ne postoji');
+    }
+    if (holiday.companyId !== companyId) {
+        throw new Error('Nemate pravo pristupa ovom prazniku');
+    }
+    return await holidayRepository.removeHoliday(holidayId);
 }

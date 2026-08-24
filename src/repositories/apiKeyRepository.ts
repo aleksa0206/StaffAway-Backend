@@ -1,8 +1,8 @@
 import { ApiKey } from "@prisma/client";
 import { prisma } from "../config/prismaClient";
 
-export async function findAllApiKeys(): Promise<ApiKey[]> {
-  return await prisma.apiKey.findMany();
+export async function findAllApiKeys(companyId: number): Promise<ApiKey[]> {
+  return await prisma.apiKey.findMany({where: {companyId}});
 }
 
 export async function findApiKeyById(apiKeyId: number): Promise<ApiKey | null> {

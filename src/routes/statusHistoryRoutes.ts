@@ -4,11 +4,12 @@ import {
   getStatusHistoryByIdHandler,
   createStatusHistoryHandler,
 } from "../controllers/statusHistoryController";
+import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.get("/status-histories", getAllStatusHistoriesHandler);
-router.get("/status-histories/:statusHistoryId", getStatusHistoryByIdHandler);
-router.post("/status-histories", createStatusHistoryHandler);
+router.get("/status-histories",authMiddleware, getAllStatusHistoriesHandler);
+router.get("/status-histories/:statusHistoryId",authMiddleware, getStatusHistoryByIdHandler);
+router.post("/status-histories",authMiddleware, createStatusHistoryHandler);
 
 export default router;
