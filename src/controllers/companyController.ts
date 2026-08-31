@@ -1,59 +1,54 @@
 import type { Request, Response } from "express";
 import * as companyService from "../services/companyService";
+import { handleControllerError } from "../errors/handleControllerError";
 
 export async function getAllCompaniesHandler(req: Request, res: Response) {
   try {
-    const company = await companyService.getAllCompanies();
-
-    res.json(company);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    const companies = await companyService.getAllCompanies(req.user!.companyId);
+    res.json(companies);
+  } catch (err) {
+    handleControllerError(err, res);
   }
 }
 
-export async function getCompanyByIdHandler(req: Request, res: Response) {
+export async function getMyCompanyHandler(req: Request, res: Response) {
   try {
-    const companyId = Number(req.params.companyId);
-
-    const company = await companyService.getCompanyById(companyId);
-
+    const company = await companyService.getOwnCompany(req.user!.companyId);
     res.json(company);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    handleControllerError(err, res);
   }
 }
 
 export async function createCompanyHandler(req: Request, res: Response) {
   try {
     const { name } = req.body;
-    const company = await companyService.createCompany({
-      name,
-    });
+    const company = await companyService.createCompany({ name }, req.user!.companyId);
     res.status(201).json(company);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    handleControllerError(err, res);
   }
 }
 
-export async function updateCompanyHandler(req: Request, res: Response) {
+export async function updateMyCompanyHandler(req: Request, res: Response) {
   try {
-    const companyId = Number(req.params.companyId);
     const { name } = req.body;
-    const company = await companyService.updateCompany(companyId, {
-      name,
-    });
+    const company = await companyService.updateOwnCompany(
+      req.user!.companyId,
+      { name },
+      req.user!.role
+    );
     res.json(company);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    handleControllerError(err, res);
   }
 }
 
-export async function deleteCompanyHandler(req: Request, res: Response) {
+export async function deleteMyCompanyHandler(req: Request, res: Response) {
   try {
-    const companyId = Number(req.params.companyId);
-    const company = await companyService.deleteCompany(companyId);
+    const company = await companyService.deleteOwnCompany(req.user!.companyId, req.user!.role);
     res.json(company);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    handleControllerError(err, res);
   }
 }

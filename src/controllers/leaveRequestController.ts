@@ -1,93 +1,72 @@
 import type { Request, Response } from 'express';
-import * as leaveBalanceService from '../services/leaveBalanceService';
+import * as leaveRequestService from '../services/leaveRequestService';
+import { handleControllerError } from '../errors/handleControllerError';
 
-export async function getAllLeaveBalancesHandler(req: Request, res: Response) {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Niste autentifikovani' });
-        }
-        const companyId = req.user.companyId;
-        const leaveBalances =
-            await leaveBalanceService.getAllLeaveBalances(companyId);
-        res.json(leaveBalances);
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
+export async function getAllLeaveRequestsHandler(req: Request, res: Response) {
+  try {
+    const leaveRequests = await leaveRequestService.getAllLeaveRequests(req.user!.companyId);
+    res.json(leaveRequests);
+  } catch (err) {
+    handleControllerError(err, res);
+  }
 }
 
-export async function getLeaveBalanceByIdHandler(req: Request, res: Response) {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Niste autentifikovani' });
-        }
-        const companyId = req.user.companyId;
-        const leaveBalanceId = Number(req.params.leaveBalanceId);
-        const leaveBalance = await leaveBalanceService.getLeaveBalanceById(
-            leaveBalanceId,
-            companyId,
-        );
-        res.json(leaveBalance);
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
+export async function getLeaveRequestByIdHandler(req: Request, res: Response) {
+  try {
+    const leaveRequestId = Number(req.params.leaveRequestId);
+    const leaveRequest = await leaveRequestService.getLeaveRequestById(leaveRequestId, req.user!.companyId);
+    res.json(leaveRequest);
+  } catch (err) {
+    handleControllerError(err, res);
+  }
 }
 
-export async function createLeaveBalanceHandler(req: Request, res: Response) {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Niste autentifikovani' });
-        }
-        const companyId = req.user.companyId;
-        const { userId, leaveTypeId, year, totalDays, usedDays } = req.body;
-        const leaveBalance = await leaveBalanceService.createLeaveBalance({
-            userId,
-            leaveTypeId,
-            companyId,
-            year,
-            totalDays,
-            usedDays,
-        });
-        res.status(201).json(leaveBalance);
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
+export async function createLeaveRequestHandler(req: Request, res: Response) {
+  try {
+    const { startDate, endDate, totalDays, comment, leaveTypeId } = req.body;
+    const leaveRequest = await leaveRequestService.createLeaveRequest({
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      totalDays,
+      comment,
+      leaveTypeId,
+      userId: req.user!.userId,
+      companyId: req.user!.companyId,
+    });
+    res.status(201).json(leaveRequest);
+  } catch (err) {
+    handleControllerError(err, res);
+  }
 }
 
-export async function updateLeaveBalanceHandler(req: Request, res: Response) {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Niste autentifikovani' });
-        }
-        const companyId = req.user.companyId;
-        const leaveBalanceId = Number(req.params.leaveBalanceId);
-        const { totalDays, usedDays } = req.body;
-        const leaveBalance = await leaveBalanceService.updateLeaveBalance(
-            leaveBalanceId,
-            companyId,
-            {
-                totalDays,
-                usedDays,
-            },
-        );
-        res.json(leaveBalance);
-    } catch (err: any) {
-        res.status(403).json({ error: err.message });
-    }
+export async function updateLeaveRequestHandler(req: Request, res: Response) {
+  try {
+    const leaveRequestId = Number(req.params.leaveRequestId);
+    const { startDate, endDate, totalDays, status, comment, approvedById } = req.body;
+    const leaveRequest = await leaveRequestService.updateLeaveRequest(
+      leaveRequestId,
+      req.user!.companyId,
+      {
+        startDate: startDate && new Date(startDate),
+        endDate: endDate && new Date(endDate),
+        totalDays,
+        status,
+        comment,
+        approvedById,
+      }
+    );
+    res.json(leaveRequest);
+  } catch (err) {
+    handleControllerError(err, res);
+  }
 }
 
-export async function deleteLeaveBalanceHandler(req: Request, res: Response) {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Niste autentifikovani' });
-        }
-        const companyId = req.user.companyId;
-        const leaveBalanceId = Number(req.params.leaveBalanceId);
-        const leaveBalance = await leaveBalanceService.deleteLeaveBalance(
-            leaveBalanceId,
-            companyId,
-        );
-        res.json(leaveBalance);
-    } catch (err: any) {
-        res.status(403).json({ error: err.message });
-    }
+export async function deleteLeaveRequestHandler(req: Request, res: Response) {
+  try {
+    const leaveRequestId = Number(req.params.leaveRequestId);
+    const leaveRequest = await leaveRequestService.deleteLeaveRequest(leaveRequestId, req.user!.companyId);
+    res.json(leaveRequest);
+  } catch (err) {
+    handleControllerError(err, res);
+  }
 }
