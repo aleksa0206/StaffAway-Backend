@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import * as userService from '../services/userServices';
+import * as userService from '../services/userService';
 import { handleControllerError } from '../errors/handleControllerError';
 
 export async function getAllUsersHandler(req: Request, res: Response) {
