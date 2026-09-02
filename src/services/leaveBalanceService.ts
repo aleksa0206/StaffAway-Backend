@@ -1,5 +1,6 @@
 import * as leaveBalanceRepository from '../repositories/leaveBalanceRepository';
-import { notFound, forbidden } from '../errors/AppError';
+import { NotFoundError } from '../errors/NotFoundError';
+import { ForbiddenError } from '../errors/ForbiddenError';
 
 export async function getAllLeaveBalances(companyId: number) {
   return await leaveBalanceRepository.findAllLeaveBalances(companyId);
@@ -7,8 +8,8 @@ export async function getAllLeaveBalances(companyId: number) {
 
 export async function getLeaveBalanceById(leaveBalanceId: number, companyId: number) {
   const leaveBalance = await leaveBalanceRepository.findLeaveBalanceById(leaveBalanceId);
-  if (!leaveBalance) throw notFound('LeaveBalance');
-  if (leaveBalance.companyId !== companyId) throw forbidden();
+  if (!leaveBalance) throw new NotFoundError('LeaveBalance');
+  if (leaveBalance.companyId !== companyId) throw new ForbiddenError();
   return leaveBalance;
 }
 
@@ -29,16 +30,14 @@ export async function updateLeaveBalance(
   data: { totalDays?: number; usedDays?: number }
 ) {
   const leaveBalance = await leaveBalanceRepository.findLeaveBalanceById(leaveBalanceId);
-  if (!leaveBalance) throw notFound('LeaveBalance');
-  if (leaveBalance.companyId !== companyId) throw forbidden();
-
+  if (!leaveBalance) throw new NotFoundError('LeaveBalance');
+  if (leaveBalance.companyId !== companyId) throw new ForbiddenError();
   return await leaveBalanceRepository.updateLeaveBalance(leaveBalanceId, data);
 }
 
 export async function deleteLeaveBalance(leaveBalanceId: number, companyId: number) {
   const leaveBalance = await leaveBalanceRepository.findLeaveBalanceById(leaveBalanceId);
-  if (!leaveBalance) throw notFound('LeaveBalance');
-  if (leaveBalance.companyId !== companyId) throw forbidden();
-
+  if (!leaveBalance) throw new NotFoundError('LeaveBalance');
+  if (leaveBalance.companyId !== companyId) throw new ForbiddenError();
   return await leaveBalanceRepository.removeLeaveBalance(leaveBalanceId);
 }

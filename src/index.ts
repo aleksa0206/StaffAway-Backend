@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import apiKeyRoutes from './routes/apiKeyRoutes';
-import attachmentRoutes from './routes/attachementRoutes';
+import attachmentRoutes from './routes/attachmentRoutes';
 import auditLogRoutes from './routes/auditLogRoutes';
 import authRoutes from './routes/authRoutes';
 import commentRoutes from './routes/commentRoutes';
@@ -18,6 +18,7 @@ import refreshTokenRoutes from './routes/refreshTokenRoutes';
 import statusHistoryRoutes from './routes/statusHistoryRoutes';
 import userRoutes from './routes/userRoutes';
 import workScheduleRoutes from './routes/workScheduleRoutes';
+import { errorMiddleware } from './middleware/errorMiddleware';
 import type {} from './types/express';
 
 const app = express();
@@ -42,6 +43,8 @@ app.use(leaveBalanceRoutes);
 app.use(companySettingsRoutes);
 app.use(apiKeyRoutes);
 app.use(authRoutes);
+
+app.use(errorMiddleware);
 
 app.listen(port, () => {
     console.log(`server radi na portu ${port}`);

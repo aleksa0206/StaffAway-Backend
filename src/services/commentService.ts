@@ -1,5 +1,6 @@
 import * as commentRepository from '../repositories/commentRepository';
-import { notFound, forbidden } from '../errors/AppError';
+import { NotFoundError } from '../errors/NotFoundError';
+import { ForbiddenError } from '../errors/ForbiddenError';
 
 export async function getAllComments(companyId: number) {
   return await commentRepository.findAllComments(companyId);
@@ -7,8 +8,8 @@ export async function getAllComments(companyId: number) {
 
 export async function getCommentById(commentId: number, companyId: number) {
   const comment = await commentRepository.findCommentById(commentId);
-  if (!comment) throw notFound('Comment');
-  if (comment.companyId !== companyId) throw forbidden();
+  if (!comment) throw new NotFoundError('Comment');
+  if (comment.companyId !== companyId) throw new ForbiddenError();
   return comment;
 }
 
@@ -24,23 +25,17 @@ export async function createComment(data: {
 export async function updateComment(
   commentId: number,
   companyId: number,
-  data: {
-    leaveRequestId?: number;
-    authorId?: number;
-    text?: string;
-  }
+  data: { leaveRequestId?: number; authorId?: number; text?: string }
 ) {
   const comment = await commentRepository.findCommentById(commentId);
-  if (!comment) throw notFound('Comment');
-  if (comment.companyId !== companyId) throw forbidden();
-
+  if (!comment) throw new NotFoundError('Comment');
+  if (comment.companyId !== companyId) throw new ForbiddenError();
   return await commentRepository.updateComment(commentId, data);
 }
 
 export async function deleteComment(commentId: number, companyId: number) {
   const comment = await commentRepository.findCommentById(commentId);
-  if (!comment) throw notFound('Comment');
-  if (comment.companyId !== companyId) throw forbidden();
-
+  if (!comment) throw new NotFoundError('Comment');
+  if (comment.companyId !== companyId) throw new ForbiddenError();
   return await commentRepository.removeComment(commentId);
 }

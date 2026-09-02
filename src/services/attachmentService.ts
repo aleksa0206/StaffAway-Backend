@@ -1,21 +1,50 @@
-import * as attachmentRepository from "../repositories/attachmentRepository";
+import * as attachmentRepository from '../repositories/attachmentRepository';
+import * as leaveRequestRepository from '../repositories/leaveRequestRepository';
+import { NotFoundError } from '../errors/NotFoundError';
+import { ForbiddenError } from '../errors/ForbiddenError';
 
-export async function getAllAttachments() {
-  return await attachmentRepository.findAllAttachments();
+export async function getAllAttachments(companyId: number) {
+  return await attachmentRepository.findAllAttachmentsByCompany(companyId);
 }
 
-export async function getAttachmentById(attachmentId: number) {
-  return await attachmentRepository.findAttachmentById(attachmentId);
+export async function getAttachmentById(attachmentId: number, companyId: number) {
+  const attachment = await attachmentRepository.findAttachmentById(attachmentId);
+
+  if (!attachment) {
+    throw new NotFoundError('Attachment');
+  }
+  if (attachment.leaveRequest?.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
+
+  return attachment;
 }
 
-export async function createAttachment(data: {
-  leaveRequestId: number;
-  fileName: string;
-  filePath: string;
-}) {
+export async function createAttachment(
+  data: { leaveRequestId: number; fileName: string; filePath: string },
+  companyId: number
+) {
+  const leaveRequest = await leaveRequestRepository.findLeaveRequestById(data.leaveRequestId);
+
+  if (!leaveRequest) {
+    throw new NotFoundError('LeaveRequest');
+  }
+  if (leaveRequest.companyId !== companyId) {
+    throw new ForbiddenError('Cannot attach file to a leave request outside your company');
+  }
+
   return await attachmentRepository.createAttachment(data);
 }
 
-export async function deleteAttachment(attachmentId: number) {
+export async function deleteAttachment(attachmentId: number, companyId: number) {
+  const attachment = await attachmentRepository.findAttachmentById(attachmentId);
+
+  if (!attachment) {
+    throw new NotFoundError('Attachment');
+  }
+  if (attachment.leaveRequest?.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
+
   return await attachmentRepository.removeAttachment(attachmentId);
 }
