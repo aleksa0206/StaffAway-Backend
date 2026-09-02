@@ -1,59 +1,54 @@
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import * as userService from '../services/userService';
-import { handleControllerError } from '../errors/handleControllerError';
 
-export async function getAllUsersHandler(req: Request, res: Response) {
+export async function getAllUsersHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const users = await userService.getAllUsers(req.user!.companyId);
     res.json(users);
   } catch (err) {
-    handleControllerError(err, res);
+    next(err);
   }
 }
 
-export async function getUserByIdHandler(req: Request, res: Response) {
+export async function getUserByIdHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = Number(req.params.userId);
     const user = await userService.getUserById(userId, req.user!.companyId);
     res.json(user);
   } catch (err) {
-    handleControllerError(err, res);
+    next(err);
   }
 }
 
-export async function createUserHandler(req: Request, res: Response) {
+export async function createUserHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const { firstName, lastName, email, password, role, managerId, hireDate } = req.body;
-
     const newUser = await userService.createUser(
       { firstName, lastName, email, password, role, managerId, hireDate: new Date(hireDate) },
       { companyId: req.user!.companyId, role: req.user!.role }
     );
-
     res.status(201).json(newUser);
   } catch (err) {
-    handleControllerError(err, res);
+    next(err);
   }
 }
 
-export async function updateUserHandler(req: Request, res: Response) {
+export async function updateUserHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const targetUserId = Number(req.params.userId);
     const { firstName, lastName, email, role, managerId, departmentId, hireDate } = req.body;
-
     const updated = await userService.updateUser(
       targetUserId,
       { firstName, lastName, email, role, managerId, departmentId, hireDate: hireDate && new Date(hireDate) },
       { userId: req.user!.userId, companyId: req.user!.companyId, role: req.user!.role }
     );
-
     res.json(updated);
   } catch (err) {
-    handleControllerError(err, res);
+    next(err);
   }
 }
 
-export async function deleteUserHandler(req: Request, res: Response) {
+export async function deleteUserHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const targetUserId = Number(req.params.userId);
     const deleted = await userService.deleteUser(targetUserId, {
@@ -63,6 +58,6 @@ export async function deleteUserHandler(req: Request, res: Response) {
     });
     res.json(deleted);
   } catch (err) {
-    handleControllerError(err, res);
+    next(err);
   }
 }
