@@ -21,7 +21,7 @@ export async function updateCompanySettings(
     minDaysNoticeForLeave?: number;
     defaultAnnualLeaveDays?: number;
     workWeekStartsMonday?: boolean;
-  },
+  }
 ) {
   return await companySettingsRepository.updateCompanySettings(companyId, data);
 }

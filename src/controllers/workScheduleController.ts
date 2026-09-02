@@ -1,91 +1,61 @@
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import * as workScheduleService from '../services/workScheduleService';
 
-export async function getAllWorkSchedulesHandler(req: Request, res: Response) {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Niste autentifikovani' });
-        }
-        const companyId = req.user.companyId;
-        const workSchedules =
-            await workScheduleService.getAllWorkSchedules(companyId);
-        res.json(workSchedules);
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
+export async function getAllWorkSchedulesHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const workSchedules = await workScheduleService.getAllWorkSchedules(req.user!.companyId);
+    res.json(workSchedules);
+  } catch (err) {
+    next(err);
+  }
 }
 
-export async function getWorkScheduleByIdHandler(req: Request, res: Response) {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Niste autentifikovani' });
-        }
-        const companyId = req.user.companyId;
-        const workScheduleId = Number(req.params.workScheduleId);
-        const workSchedule = await workScheduleService.getWorkScheduleById(
-            workScheduleId,
-            companyId,
-        );
-        res.json(workSchedule);
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
+export async function getWorkScheduleByIdHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const workScheduleId = Number(req.params.workScheduleId);
+    const workSchedule = await workScheduleService.getWorkScheduleById(workScheduleId, req.user!.companyId);
+    res.json(workSchedule);
+  } catch (err) {
+    next(err);
+  }
 }
 
-export async function createWorkScheduleHandler(req: Request, res: Response) {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Niste autentifikovani' });
-        }
-        const companyId = req.user.companyId;
-        const { userId, hoursPerWeek, isPartTime } = req.body;
-        const workSchedule = await workScheduleService.createWorkSchedule({
-            userId,
-            companyId,
-            hoursPerWeek,
-            isPartTime,
-        });
-        res.status(201).json(workSchedule);
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
+export async function createWorkScheduleHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { userId, hoursPerWeek, isPartTime } = req.body;
+    const workSchedule = await workScheduleService.createWorkSchedule({
+      userId,
+      hoursPerWeek,
+      isPartTime,
+      companyId: req.user!.companyId,
+    });
+    res.status(201).json(workSchedule);
+  } catch (err) {
+    next(err);
+  }
 }
 
-export async function updateWorkScheduleHandler(req: Request, res: Response) {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Niste autentifikovani' });
-        }
-        const companyId = req.user.companyId;
-        const workScheduleId = Number(req.params.workScheduleId);
-        const { hoursPerWeek, isPartTime } = req.body;
-        const workSchedule = await workScheduleService.updateWorkSchedule(
-            workScheduleId,
-            companyId,
-            {
-                hoursPerWeek,
-                isPartTime,
-            },
-        );
-        res.json(workSchedule);
-    } catch (err: any) {
-        res.status(403).json({ error: err.message });
-    }
+export async function updateWorkScheduleHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const workScheduleId = Number(req.params.workScheduleId);
+    const { hoursPerWeek, isPartTime } = req.body;
+    const workSchedule = await workScheduleService.updateWorkSchedule(
+      workScheduleId,
+      req.user!.companyId,
+      { hoursPerWeek, isPartTime }
+    );
+    res.json(workSchedule);
+  } catch (err) {
+    next(err);
+  }
 }
 
-export async function deleteWorkScheduleHandler(req: Request, res: Response) {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Niste autentifikovani' });
-        }
-        const companyId = req.user.companyId;
-        const workScheduleId = Number(req.params.workScheduleId);
-        const workSchedule = await workScheduleService.deleteWorkSchedule(
-            workScheduleId,
-            companyId,
-        );
-        res.json(workSchedule);
-    } catch (err: any) {
-        res.status(403).json({ error: err.message });
-    }
+export async function deleteWorkScheduleHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const workScheduleId = Number(req.params.workScheduleId);
+    const workSchedule = await workScheduleService.deleteWorkSchedule(workScheduleId, req.user!.companyId);
+    res.json(workSchedule);
+  } catch (err) {
+    next(err);
+  }
 }

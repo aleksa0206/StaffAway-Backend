@@ -1,60 +1,42 @@
 import * as departmentRepository from '../repositories/departmentRepository';
+import { NotFoundError } from '../errors/NotFoundError';
+import { ForbiddenError } from '../errors/ForbiddenError';
 
 export async function getAllDepartments(companyId: number) {
-    return await departmentRepository.findAllDepartments(companyId);
+  return await departmentRepository.findAllDepartments(companyId);
 }
 
-export async function getDepartmentById(
-    departmentId: number,
-    companyId: number,
-) {
-    const department =
-        await departmentRepository.findDepartmentById(departmentId);
+export async function getDepartmentById(departmentId: number, companyId: number) {
+  const department = await departmentRepository.findDepartmentById(departmentId);
 
-    if (!department || department.companyId !== companyId) {
-        return null;
-    }
+  if (!department) throw new NotFoundError('Department');
+  if (department.companyId !== companyId) throw new ForbiddenError();
 
-    return department;
+  return department;
 }
 
-export async function createDepartment(data: {
-    name: string;
-    companyId: number;
-}) {
-    return await departmentRepository.createDepartment(data);
+export async function createDepartment(data: { name: string; companyId: number }) {
+  return await departmentRepository.createDepartment(data);
 }
+
 export async function updateDepartment(
-    departmentId: number,
-    companyId: number,
-    data: { name?: string },
+  departmentId: number,
+  companyId: number,
+  data: { name?: string }
 ) {
-    const department =
-        await departmentRepository.findDepartmentById(departmentId);
+  const department = await departmentRepository.findDepartmentById(departmentId);
 
-    if (!department) {
-        throw new Error('Odeljenje ne postoji');
-    }
+  if (!department) throw new NotFoundError('Department');
+  if (department.companyId !== companyId) throw new ForbiddenError();
 
-    if (department.companyId !== companyId) {
-        throw new Error('Nemate pravo pristupa ovom odeljenju');
-    }
-
-    return await departmentRepository.updateDepartment(departmentId, data);
+  return await departmentRepository.updateDepartment(departmentId, data);
 }
 
+export async function deleteDepartment(departmentId: number, companyId: number) {
+  const department = await departmentRepository.findDepartmentById(departmentId);
 
-export async function deleteDepartment(
-    departmentId: number,
-    companyId: number,
-) {
-    const department =
-        await departmentRepository.findDepartmentById(departmentId);
-    if (!department) {
-        throw new Error('Odeljenje ne postoji');
-    }
-    if (department.companyId !== companyId) {
-        throw new Error('Nemate pravo pristupa ovom odeljenju');
-    }
-    return await departmentRepository.removeDepartment(departmentId);
+  if (!department) throw new NotFoundError('Department');
+  if (department.companyId !== companyId) throw new ForbiddenError();
+
+  return await departmentRepository.removeDepartment(departmentId);
 }

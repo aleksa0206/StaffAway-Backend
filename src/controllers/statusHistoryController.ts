@@ -1,57 +1,37 @@
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import * as statusHistoryService from '../services/statusHistoryService';
 
-export async function getAllStatusHistoriesHandler(
-    req: Request,
-    res: Response,
-) {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Niste autentifikovani' });
-        }
-        const companyId = req.user.companyId;
-        const statusHistories =
-            await statusHistoryService.getAllStatusHistories(companyId);
-        res.json(statusHistories);
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
+export async function getAllStatusHistoriesHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const statusHistories = await statusHistoryService.getAllStatusHistories(req.user!.companyId);
+    res.json(statusHistories);
+  } catch (err) {
+    next(err);
+  }
 }
 
-export async function getStatusHistoryByIdHandler(req: Request, res: Response) {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Niste autentifikovani' });
-        }
-        const companyId = req.user.companyId;
-        const statusHistoryId = Number(req.params.statusHistoryId);
-        const statusHistory = await statusHistoryService.getStatusHistoryById(
-            statusHistoryId,
-            companyId,
-        );
-        res.json(statusHistory);
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
+export async function getStatusHistoryByIdHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const statusHistoryId = Number(req.params.statusHistoryId);
+    const statusHistory = await statusHistoryService.getStatusHistoryById(statusHistoryId, req.user!.companyId);
+    res.json(statusHistory);
+  } catch (err) {
+    next(err);
+  }
 }
 
-export async function createStatusHistoryHandler(req: Request, res: Response) {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Niste autentifikovani' });
-        }
-        const companyId = req.user.companyId;
-        const changedById = req.user.userId;
-        const { leaveRequestId, oldStatus, newStatus } = req.body;
-        const statusHistory = await statusHistoryService.createStatusHistory({
-            leaveRequestId,
-            changedById,
-            companyId,
-            oldStatus,
-            newStatus,
-        });
-        res.status(201).json(statusHistory);
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
+export async function createStatusHistoryHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { leaveRequestId, oldStatus, newStatus } = req.body;
+    const statusHistory = await statusHistoryService.createStatusHistory({
+      leaveRequestId,
+      changedById: req.user!.userId,
+      companyId: req.user!.companyId,
+      oldStatus,
+      newStatus,
+    });
+    res.status(201).json(statusHistory);
+  } catch (err) {
+    next(err);
+  }
 }
