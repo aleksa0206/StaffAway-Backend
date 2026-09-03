@@ -1,5 +1,9 @@
 import { Notification } from "@prisma/client";
 import { prisma } from "../config/prismaClient";
+import { Prisma } from '@prisma/client';
+
+type PrismaClientOrTx = typeof prisma | Prisma.TransactionClient;
+
 
 export async function findAllNotifications(userId: number): Promise<Notification[]> {
   return await prisma.notification.findMany({ where: { userId } });
@@ -9,13 +13,17 @@ export async function findNotificationById(notificationId: number): Promise<Noti
   return await prisma.notification.findUnique({ where: { id: notificationId } });
 }
 
-export async function createNotification(data: {
-  userId: number;
-  message: string;
-  isRead: boolean;
-  type: "LeaveRequestSubmitted" | "LeaveRequestApproved" | "LeaveRequestRejected" | "General";
-}): Promise<Notification> {
-  return await prisma.notification.create({ data });
+
+export async function createNotification(
+  data: {
+    userId: number;
+    message: string;
+    isRead: boolean;
+    type: "LeaveRequestSubmitted" | "LeaveRequestApproved" | "LeaveRequestRejected" | "General";
+  },
+  client: PrismaClientOrTx = prisma
+): Promise<Notification> {
+  return await client.notification.create({ data });
 }
 
 export async function updateNotification(

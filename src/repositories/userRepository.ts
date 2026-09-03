@@ -1,5 +1,5 @@
-import { User } from '@prisma/client';
-import { prisma } from '../config/prismaClient';
+import { User } from "@prisma/client";
+import { prisma } from "../config/prismaClient";
 
 const userSafeSelect = {
   id: true,
@@ -16,11 +16,17 @@ const userSafeSelect = {
 } as const;
 
 export async function findAll(companyId: number) {
-  return await prisma.user.findMany({ where: { companyId }, select: userSafeSelect });
+  return await prisma.user.findMany({
+    where: { companyId },
+    select: userSafeSelect,
+  });
 }
 
 export async function findById(userId: number) {
-  return await prisma.user.findUnique({ where: { id: userId }, select: userSafeSelect });
+  return await prisma.user.findUnique({
+    where: { id: userId },
+    select: userSafeSelect,
+  });
 }
 
 export async function create(data: {
@@ -28,7 +34,7 @@ export async function create(data: {
   lastName: string;
   email: string;
   passwordHash: string;
-  role: 'Employee' | 'Manager' | 'Hr';
+  role: "Employee" | "Manager" | "Hr";
   managerId: number | null;
   hireDate: Date;
   companyId: number;
@@ -42,19 +48,69 @@ export async function update(
     firstName: string;
     lastName: string;
     email: string;
-    role: 'Employee' | 'Manager' | 'Hr';
+    role: "Employee" | "Manager" | "Hr";
     managerId: number | null;
     departmentId: number | null;
     hireDate: Date;
-  }>
+  }>,
 ) {
-  return await prisma.user.update({ where: { id: userId }, data, select: userSafeSelect });
+  return await prisma.user.update({
+    where: { id: userId },
+    data,
+    select: userSafeSelect,
+  });
 }
 
 export async function remove(userId: number) {
-  return await prisma.user.delete({ where: { id: userId }, select: userSafeSelect });
+  return await prisma.user.delete({
+    where: { id: userId },
+    select: userSafeSelect,
+  });
 }
 
 export async function findUserByEmail(email: string) {
   return await prisma.user.findFirst({ where: { email } });
+}
+
+export async function incrementFailedLoginAttempts(userId: number) {
+  return await prisma.user.update({
+    where: { id: userId },
+    data: { failedLoginAttempts: { increment: 1 } },
+  });
+}
+
+export async function setAccountLock(
+  userId: number,
+  lockedUntil: Date | null,
+  failedLoginAttempts: number,
+) {
+  return await prisma.user.update({
+    where: { id: userId },
+    data: { lockedUntil, failedLoginAttempts },
+  });
+}
+
+export async function setTwoFactorSecret(userId: number, secret: string) {
+  return await prisma.user.update({
+    where: { id: userId },
+    data: { twoFactorSecret: secret },
+  });
+}
+
+export async function enableTwoFactor(userId: number) {
+  return await prisma.user.update({
+    where: { id: userId },
+    data: { twoFactorEnabled: true },
+  });
+}
+
+export async function disableTwoFactor(userId: number) {
+  return await prisma.user.update({
+    where: { id: userId },
+    data: { twoFactorEnabled: false, twoFactorSecret: null },
+  });
+}
+
+export async function findByIdWithAuthFields(userId: number) {
+  return await prisma.user.findUnique({ where: { id: userId } });
 }

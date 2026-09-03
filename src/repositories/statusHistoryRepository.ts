@@ -1,8 +1,12 @@
-import { StatusHistory } from "@prisma/client";
+import { Prisma, StatusHistory } from "@prisma/client";
 import { prisma } from "../config/prismaClient";
 
-export async function findAllStatusHistories(companyId: number): Promise<StatusHistory[]> {
-  return await prisma.statusHistory.findMany({where: {companyId}});
+type PrismaClientOrTx = typeof prisma | Prisma.TransactionClient;
+
+export async function findAllStatusHistories(
+  companyId: number,
+): Promise<StatusHistory[]> {
+  return await prisma.statusHistory.findMany({ where: { companyId } });
 }
 
 export async function findStatusHistoryById(
@@ -13,12 +17,15 @@ export async function findStatusHistoryById(
   });
 }
 
-export async function createStatusHistory(data: {
-  leaveRequestId: number;
-  changedById: number;
-  companyId: number;
-  oldStatus: "Pending" | "Approval" | "Rejected";
-  newStatus: "Pending" | "Approval" | "Rejected";
-}): Promise<StatusHistory> {
-  return await prisma.statusHistory.create({ data });
+export async function createStatusHistory(
+  data: {
+    leaveRequestId: number;
+    changedById: number;
+    companyId: number;
+    oldStatus: "Pending" | "Approval" | "Rejected";
+    newStatus: "Pending" | "Approval" | "Rejected";
+  },
+  client: PrismaClientOrTx = prisma,
+) {
+  return await client.statusHistory.create({ data });
 }

@@ -1,31 +1,49 @@
-import type { Request, Response, NextFunction } from 'express';
-import * as leaveRequestService from '../services/leaveRequestService';
+import type { Request, Response, NextFunction } from "express";
+import * as leaveRequestService from "../services/leaveRequestService";
+import { Prisma } from "@prisma/client";
 
-export async function getAllLeaveRequestsHandler(req: Request, res: Response, next: NextFunction) {
+export async function getAllLeaveRequestsHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
-    const leaveRequests = await leaveRequestService.getAllLeaveRequests(req.user!.companyId);
+    const leaveRequests = await leaveRequestService.getAllLeaveRequests(
+      req.user!.companyId,
+    );
     res.json(leaveRequests);
   } catch (err) {
     next(err);
   }
 }
 
-export async function getLeaveRequestByIdHandler(req: Request, res: Response, next: NextFunction) {
+export async function getLeaveRequestByIdHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const leaveRequestId = Number(req.params.leaveRequestId);
-    const leaveRequest = await leaveRequestService.getLeaveRequestById(leaveRequestId, req.user!.companyId);
+    const leaveRequest = await leaveRequestService.getLeaveRequestById(
+      leaveRequestId,
+      req.user!.companyId,
+    );
     res.json(leaveRequest);
   } catch (err) {
     next(err);
   }
 }
 
-export async function createLeaveRequestHandler(req: Request, res: Response, next: NextFunction) {
+export async function createLeaveRequestHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const { startDate, endDate, totalDays, comment, leaveTypeId } = req.body;
     const leaveRequest = await leaveRequestService.createLeaveRequest({
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      startDate,
+      endDate,
       totalDays,
       comment,
       leaveTypeId,
@@ -38,21 +56,21 @@ export async function createLeaveRequestHandler(req: Request, res: Response, nex
   }
 }
 
-export async function updateLeaveRequestHandler(req: Request, res: Response, next: NextFunction) {
+export async function updateLeaveRequestHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const leaveRequestId = Number(req.params.leaveRequestId);
-    const { startDate, endDate, totalDays, status, comment, approvedById } = req.body;
+    const { startDate, endDate, totalDays, status, comment, approvedById } =
+      req.body;
     const leaveRequest = await leaveRequestService.updateLeaveRequest(
       leaveRequestId,
       req.user!.companyId,
-      {
-        startDate: startDate && new Date(startDate),
-        endDate: endDate && new Date(endDate),
-        totalDays,
-        status,
-        comment,
-        approvedById,
-      }
+      req.user!.userId,
+      req.user!.role,
+      { startDate, endDate, totalDays, status, comment, approvedById },
     );
     res.json(leaveRequest);
   } catch (err) {
@@ -60,10 +78,17 @@ export async function updateLeaveRequestHandler(req: Request, res: Response, nex
   }
 }
 
-export async function deleteLeaveRequestHandler(req: Request, res: Response, next: NextFunction) {
+export async function deleteLeaveRequestHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const leaveRequestId = Number(req.params.leaveRequestId);
-    const leaveRequest = await leaveRequestService.deleteLeaveRequest(leaveRequestId, req.user!.companyId);
+    const leaveRequest = await leaveRequestService.deleteLeaveRequest(
+      leaveRequestId,
+      req.user!.companyId,
+    );
     res.json(leaveRequest);
   } catch (err) {
     next(err);

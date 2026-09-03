@@ -1,5 +1,7 @@
-import { LeaveRequest } from '@prisma/client';
+import { LeaveRequest, Prisma } from '@prisma/client';
 import { prisma } from '../config/prismaClient';
+
+type PrismaClientOrTx = typeof prisma | Prisma.TransactionClient;
 
 export async function findAllLeaveRequests(
     companyId: number,
@@ -30,26 +32,42 @@ export async function createLeaveRequest(data: {
 }
 
 export async function updateLeaveRequest(
-    leaveRequestId: number,
-    data: {
-        startDate?: Date;
-        endDate?: Date;
-        totalDays?: number;
-        status?: 'Pending' | 'Approval' | 'Rejected';
-        comment?: string;
-        approvedById?: number;
-        leaveTypeId?: number;
-        companyId?: number;
-    },
+  leaveRequestId: number,
+  data: {
+    startDate?: Date;
+    endDate?: Date;
+    totalDays?: number;
+    status?: 'Pending' | 'Approval' | 'Rejected';
+    comment?: string;
+    approvedById?: number;
+    leaveTypeId?: number;
+    companyId?: number;
+  },
+  client: PrismaClientOrTx = prisma
 ): Promise<LeaveRequest> {
-    return await prisma.leaveRequest.update({
-        where: { id: leaveRequestId },
-        data,
-    });
+  return await client.leaveRequest.update({ where: { id: leaveRequestId }, data });
 }
 
 export async function removeLeaveRequest(
     leaveRequestId: number,
 ): Promise<LeaveRequest> {
     return await prisma.leaveRequest.delete({ where: { id: leaveRequestId } });
+}
+
+
+export async function findOverlappingLeaveRequests(
+  userId: number,
+  startDate: Date,
+  endDate: Date,
+  excludeLeaveRequestId?: number
+): Promise<LeaveRequest[]> {
+  return await prisma.leaveRequest.findMany({
+    where: {
+      userId,
+      status: { not: 'Rejected' },
+      startDate: { lte: endDate },
+      endDate: { gte: startDate },
+      ...(excludeLeaveRequestId ? { id: { not: excludeLeaveRequestId } } : {}),
+    },
+  });
 }

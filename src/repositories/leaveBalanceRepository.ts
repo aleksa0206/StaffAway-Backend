@@ -1,50 +1,57 @@
-import { LeaveBalance } from '@prisma/client';
-import { prisma } from '../config/prismaClient';
+import { prisma } from "../config/prismaClient";
+import type { LeaveBalance, Prisma } from "@prisma/client";
 
-export async function findAllLeaveBalances(
-    companyId: number,
-): Promise<LeaveBalance[]> {
-    return await prisma.leaveBalance.findMany({ where: { companyId } });
-}
+type PrismaClientOrTx = typeof prisma | Prisma.TransactionClient;
 
 export async function findLeaveBalanceById(
-    leaveBalanceId: number,
+  leaveBalanceId: number,
 ): Promise<LeaveBalance | null> {
-    return await prisma.leaveBalance.findUnique({
-        where: { id: leaveBalanceId },
-    });
-}
-
-export async function createLeaveBalance(data: {
-    userId: number;
-    leaveTypeId: number;
-    companyId: number;
-    year: number;
-    totalDays: number;
-    usedDays: number;
-}): Promise<LeaveBalance> {
-    return await prisma.leaveBalance.create({ data });
+  return await prisma.leaveBalance.findUnique({
+    where: { id: leaveBalanceId },
+  });
 }
 
 export async function updateLeaveBalance(
-    leaveBalanceId: number,
-    data: {
-        userId?: number;
-        leaveTypeId?: number;
-        companyId?: number;
-        year?: number;
-        totalDays?: number;
-        usedDays?: number;
-    },
-): Promise<LeaveBalance> {
-    return await prisma.leaveBalance.update({
-        where: { id: leaveBalanceId },
-        data,
-    });
+  leaveBalanceId: number,
+  data: { totalDays?: number; usedDays?: number },
+  client: PrismaClientOrTx = prisma,
+) {
+  return await client.leaveBalance.update({
+    where: { id: leaveBalanceId },
+    data,
+  });
+}
+
+export async function findAllLeaveBalances(
+  companyId: number,
+): Promise<LeaveBalance[]> {
+  return await prisma.leaveBalance.findMany({ where: { companyId } });
+}
+
+export async function createLeaveBalance(data: {
+  userId: number;
+  leaveTypeId: number;
+  companyId: number;
+  year: number;
+  totalDays: number;
+  usedDays: number;
+}): Promise<LeaveBalance> {
+  return await prisma.leaveBalance.create({ data });
 }
 
 export async function removeLeaveBalance(
-    leaveBalanceId: number,
+  leaveBalanceId: number,
 ): Promise<LeaveBalance> {
-    return await prisma.leaveBalance.delete({ where: { id: leaveBalanceId } });
+  return await prisma.leaveBalance.delete({ where: { id: leaveBalanceId } });
+}
+
+export async function findLeaveBalanceByUserTypeYear(
+  userId: number,
+  leaveTypeId: number,
+  year: number,
+  client: PrismaClientOrTx = prisma,
+) {
+  return await client.leaveBalance.findUnique({
+    where: { userId_leaveTypeId_year: { userId, leaveTypeId, year } },
+  });
 }

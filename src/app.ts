@@ -1,0 +1,52 @@
+import 'dotenv/config';
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import apiKeyRoutes from './routes/apiKeyRoutes';
+import attachmentRoutes from './routes/attachmentRoutes';
+import auditLogRoutes from './routes/auditLogRoutes';
+import authRoutes from './routes/authRoutes';
+import commentRoutes from './routes/commentRoutes';
+import companyRoutes from './routes/companyRoutes';
+import companySettingsRoutes from './routes/companySettingsRoutes';
+import departmentRoutes from './routes/departmentRoutes';
+import healthRoutes from './routes/healthRoutes';
+import holidayRoutes from './routes/holidayRoutes';
+import leaveBalanceRoutes from './routes/leaveBalanceRoutes';
+import leaveRequestRoutes from './routes/leaveRequestRoutes';
+import leaveTypeRoutes from './routes/leaveTypeRoutes';
+import notificationRoutes from './routes/notificationRoutes';
+import refreshTokenRoutes from './routes/refreshTokenRoutes';
+import statusHistoryRoutes from './routes/statusHistoryRoutes';
+import userRoutes from './routes/userRoutes';
+import workScheduleRoutes from './routes/workScheduleRoutes';
+import { errorMiddleware } from './middleware/errorMiddleware';
+import { generalRateLimiter } from './middleware/rateLimit';
+import type {} from './types/express';
+
+const app = express();
+
+app.use(express.json());
+app.use(cookieParser());
+app.use(generalRateLimiter);
+app.use(healthRoutes);
+app.use(userRoutes);
+app.use(departmentRoutes);
+app.use(leaveTypeRoutes);
+app.use(holidayRoutes);
+app.use(companyRoutes);
+app.use(commentRoutes);
+app.use(workScheduleRoutes);
+app.use(notificationRoutes);
+app.use(auditLogRoutes);
+app.use(refreshTokenRoutes);
+app.use(attachmentRoutes);
+app.use(statusHistoryRoutes);
+app.use(leaveRequestRoutes);
+app.use(leaveBalanceRoutes);
+app.use(companySettingsRoutes);
+app.use(apiKeyRoutes);
+app.use(authRoutes);
+
+app.use(errorMiddleware);
+
+export default app;

@@ -7,13 +7,15 @@ import {
   deleteUserHandler,
 } from '../controllers/userController';
 import { authMiddleware } from '../middleware/authMiddleware';
+import { validate } from '../middleware/validate';
+import { createUserSchema, updateUserSchema } from '../validation/userSchemas';
 
 const router = Router();
 
 router.get('/users', authMiddleware, getAllUsersHandler);
 router.get('/users/:userId', authMiddleware, getUserByIdHandler);
-router.post('/users', authMiddleware, createUserHandler);
-router.put('/users/:userId', authMiddleware, updateUserHandler);
+router.post('/users', authMiddleware, validate(createUserSchema), createUserHandler);
+router.put('/users/:userId', authMiddleware, validate(updateUserSchema), updateUserHandler);
 router.delete('/users/:userId', authMiddleware, deleteUserHandler);
 
 export default router;

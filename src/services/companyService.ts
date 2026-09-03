@@ -1,4 +1,5 @@
 import * as companyRepository from '../repositories/companyRepository';
+import * as auditLogRepository from '../repositories/auditLogRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 import { PLATFORM_COMPANY_ID } from '../config/constants';
@@ -25,20 +26,54 @@ export async function createCompany(data: { name: string }, requestingCompanyId:
   return await companyRepository.createCompany(data);
 }
 
-export async function updateOwnCompany(companyId: number, data: { name?: string }, role: string) {
+export async function updateOwnCompany(
+  companyId: number,
+  data: { name?: string },
+  role: string,
+  performedById: number
+) {
   if (role !== 'Hr') {
     throw new ForbiddenError('Only Hr role can update the company');
   }
+
   const existing = await companyRepository.findCompanyById(companyId);
   if (!existing) throw new NotFoundError('Company');
-  return await companyRepository.updateCompany(companyId, data);
+
+  const updated = await companyRepository.updateCompany(companyId, data);
+
+  if (data.name !== undefined && data.name !== existing.name) {
+    await auditLogRepository.createAuditLog({
+      performedById,
+      entityId: companyId,
+      entityType: 'Company',
+      action: 'UPDATE_COMPANY_NAME',
+      oldValue: existing.name,
+      newValue: data.name,
+      companyId,
+    });
+  }
+
+  return updated;
 }
 
-export async function deleteOwnCompany(companyId: number, role: string) {
+export async function deleteOwnCompany(companyId: number, role: string, performedById: number) {
   if (role !== 'Hr') {
     throw new ForbiddenError('Only Hr role can delete the company');
   }
+
   const existing = await companyRepository.findCompanyById(companyId);
   if (!existing) throw new NotFoundError('Company');
-  return await companyRepository.removeCompany(companyId);
+
+  const deleted = await companyRepository.removeCompany(companyId);
+
+  await auditLogRepository.createAuditLog({
+    performedById,
+    entityId: companyId,
+    entityType: 'Company',
+    action: 'DELETE_COMPANY',
+    oldValue: existing.name,
+    companyId,
+  });
+
+  return deleted;
 }
