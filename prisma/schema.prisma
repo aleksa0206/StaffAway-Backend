@@ -57,6 +57,8 @@ model User {
   email        String
   passwordHash String
   twoFactorSecret  String?
+  resetPasswordTokenHash String?
+  resetPasswordExpiresAt DateTime?
   hireDate     DateTime
   lockedUntil          DateTime?
   twoFactorEnabled Boolean @default(false)

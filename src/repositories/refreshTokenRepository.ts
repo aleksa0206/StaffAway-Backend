@@ -41,3 +41,11 @@ export async function removeRefreshToken(
 export async function findRefreshTokenByTokenHash(tokenHash: string) {
   return await prisma.refreshToken.findUnique({ where: { token: tokenHash } });
 }
+
+
+export async function revokeAllForUser(userId: number) {
+  return await prisma.refreshToken.updateMany({
+    where: { userId, revoked: false },
+    data: { revoked: true },
+  });
+}

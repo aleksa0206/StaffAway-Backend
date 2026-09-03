@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../errors/AppError';
 import { TwoFactorRequiredError } from '../errors/TwoFactorRequiredError';
+import { logger } from '../config/logger';
 
 export function errorMiddleware(err: unknown, req: Request, res: Response, next: NextFunction) {
   if (err instanceof TwoFactorRequiredError) {
@@ -13,6 +14,6 @@ export function errorMiddleware(err: unknown, req: Request, res: Response, next:
     return;
   }
 
-  console.error(err);
+  logger.error({ err, path: req.path, method: req.method }, 'Unhandled error');
   res.status(500).json({ error: 'Internal server error' });
 }

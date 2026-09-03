@@ -21,6 +21,8 @@ import userRoutes from './routes/userRoutes';
 import workScheduleRoutes from './routes/workScheduleRoutes';
 import { errorMiddleware } from './middleware/errorMiddleware';
 import { generalRateLimiter } from './middleware/rateLimit';
+import pinoHttp from 'pino-http';
+import { logger } from './config/logger';
 import type {} from './types/express';
 
 const app = express();
@@ -46,7 +48,7 @@ app.use(leaveBalanceRoutes);
 app.use(companySettingsRoutes);
 app.use(apiKeyRoutes);
 app.use(authRoutes);
-
+app.use(pinoHttp({ logger }));
 app.use(errorMiddleware);
 
 export default app;

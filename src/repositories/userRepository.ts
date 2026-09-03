@@ -114,3 +114,18 @@ export async function disableTwoFactor(userId: number) {
 export async function findByIdWithAuthFields(userId: number) {
   return await prisma.user.findUnique({ where: { id: userId } });
 }
+
+export async function setPasswordResetToken(userId: number, tokenHash: string | null, expiresAt: Date | null) {
+  return await prisma.user.update({
+    where: { id: userId },
+    data: { resetPasswordTokenHash: tokenHash, resetPasswordExpiresAt: expiresAt },
+  });
+}
+
+export async function findByResetTokenHash(tokenHash: string) {
+  return await prisma.user.findFirst({ where: { resetPasswordTokenHash: tokenHash } });
+}
+
+export async function updatePassword(userId: number, passwordHash: string) {
+  return await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+}

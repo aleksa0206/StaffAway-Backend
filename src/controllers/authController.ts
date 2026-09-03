@@ -87,3 +87,23 @@ export async function logoutHandler(req: Request, res: Response, next: NextFunct
     next(err);
   }
 }
+
+export async function requestPasswordResetHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { email } = req.body;
+    await authService.requestPasswordReset(email);
+    res.json({ message: 'If that email exists, a reset link has been sent.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function resetPasswordHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { token, newPassword } = req.body;
+    await authService.resetPassword(token, newPassword);
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}

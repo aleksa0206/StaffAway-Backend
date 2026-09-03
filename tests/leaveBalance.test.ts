@@ -1,0 +1,39 @@
+﻿import request from 'supertest';
+import app from '../src/app';
+import { cleanDatabase, disconnectDb } from './helpers/testDb';
+import { tokenFor } from './helpers/testHelpers';
+import { createTestCompany, createTestUser, createTestLeaveType, createTestLeaveBalance } from './helpers/testFactory';
+
+describe('LeaveBalance ownership', () => {
+  afterEach(async () => {
+    await cleanDatabase();
+  });
+
+  afterAll(async () => {
+    await disconnectDb();
+  });
+
+  it('korisnik druge firme ne vidi tudji balans (403)', async () => {
+    const companyA = await createTestCompany('A');
+    const companyB = await createTestCompany('B');
+    const { user: userA } = await createTestUser({ companyId: companyA.id });
+    const { user: userB } = await createTestUser({ companyId: companyB.id });
+    const leaveType = await createTestLeaveType(companyA.id);
+    const balance = await createTestLeaveBalance({ userId: userA.id, leaveTypeId: leaveType.id, companyId: companyA.id });
+    const tokenB = tokenFor({ id: userB.id, role: userB.role, companyId: companyB.id });
+
+    const res = await request(app).get(`/leave-balances/${balance.id}`).set('Authorization', `Bearer ${tokenB}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('nepostojeci balans vraca 404', async () => {
+    const company = await createTestCompany();
+    const { user } = await createTestUser({ companyId: company.id });
+    const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
+
+    const res = await request(app).get('/leave-balances/999999').set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+  });
+});

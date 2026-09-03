@@ -8,6 +8,10 @@ import * as refreshTokenRepository from "../repositories/refreshTokenRepository"
 import { UnauthorizedError } from "../errors/UnauthorizedError";
 import { LockedError } from "../errors/LockedError";
 import { TwoFactorRequiredError } from "../errors/TwoFactorRequiredError";
+import { sendPasswordResetEmail } from "./emailService";
+
+
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; 
 
 const totp = new TOTP({
   crypto: new NobleCryptoPlugin(),
@@ -221,4 +225,35 @@ export async function logout(oldRefreshToken: string) {
   if (existing) {
     await refreshTokenRepository.revokeRefreshToken(existing.id);
   }
+}
+
+export async function requestPasswordReset(email: string) {
+  const user = await userRepository.findUserByEmail(email);
+
+  if (!user) {
+    return;
+  }
+
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = hashToken(rawToken);
+  const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+
+  await userRepository.setPasswordResetToken(user.id, tokenHash, expiresAt);
+  await sendPasswordResetEmail(user.email, rawToken);
+}
+
+export async function resetPassword(rawToken: string, newPassword: string) {
+  const tokenHash = hashToken(rawToken);
+  const user = await userRepository.findByResetTokenHash(tokenHash);
+
+  if (!user || !user.resetPasswordExpiresAt || user.resetPasswordExpiresAt < new Date()) {
+    throw new UnauthorizedError('Invalid or expired reset token');
+  }
+
+  const newPasswordHash = await bcrypt.hash(newPassword, 10);
+  await userRepository.updatePassword(user.id, newPasswordHash);
+  await userRepository.setPasswordResetToken(user.id, null, null);
+
+  // Bezbednosna mera: poništi SVE postojece refresh tokene nakon reset-a lozinke
+  await refreshTokenRepository.revokeAllForUser(user.id);
 }

@@ -2,8 +2,8 @@
   generateSecret() {
     return 'MOCKSECRET';
   }
-  async verify(_token: string, _options?: any) {
-    return { valid: false };
+  async verify(token: string, _options?: any) {
+    return { valid: token === '123456' };
   }
   toURI(_options?: any) {
     return 'otpauth://totp/mock';
