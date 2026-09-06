@@ -1,10 +1,12 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as apiKeyService from '../services/apiKeyService';
+import { buildPaginationMeta, parsePagination } from '../utils/pagination';
 
 export async function getAllApiKeysHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const apiKeys = await apiKeyService.getAllApiKeys(req.user!.companyId);
-    res.json(apiKeys);
+    const pagination = parsePagination(req);
+    const { data, total } = await apiKeyService.getAllApiKeys(req.user!.companyId, pagination);
+    res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });
   } catch (err) {
     next(err);
   }

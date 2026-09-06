@@ -2,8 +2,11 @@ import * as commentRepository from '../repositories/commentRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 
-export async function getAllComments(companyId: number) {
-  return await commentRepository.findAllComments(companyId);
+export async function getAllComments(
+  companyId: number,
+  pagination: { skip: number; take: number }
+) {
+  return await commentRepository.findAllComments(companyId, pagination);
 }
 
 export async function getCommentById(commentId: number, companyId: number) {

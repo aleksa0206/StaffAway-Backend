@@ -1,10 +1,12 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as companyService from '../services/companyService';
+import { buildPaginationMeta, parsePagination } from '../utils/pagination';
 
 export async function getAllCompaniesHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const companies = await companyService.getAllCompanies(req.user!.companyId);
-    res.json(companies);
+    const pagination = parsePagination(req);
+    const { data, total } = await companyService.getAllCompanies(req.user!.companyId, pagination);
+    res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });
   } catch (err) {
     next(err);
   }
@@ -27,7 +29,8 @@ export async function createCompanyHandler(req: Request, res: Response, next: Ne
   } catch (err) {
     next(err);
   }
-}export async function updateMyCompanyHandler(req: Request, res: Response, next: NextFunction) {
+}
+export async function updateMyCompanyHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const { name } = req.body;
     const company = await companyService.updateOwnCompany(

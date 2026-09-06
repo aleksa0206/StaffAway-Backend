@@ -19,7 +19,9 @@ describe('RefreshToken', () => {
     const rt = await createTestRefreshToken({ userId: user.id });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
 
-    const res = await request(app).get(`/refresh-tokens/${rt.id}`).set('Authorization', `Bearer ${token}`);
+    const res = await request(app)
+      .get(`/refresh-tokens/${rt.id}`)
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
   });
@@ -31,7 +33,9 @@ describe('RefreshToken', () => {
     const rt = await createTestRefreshToken({ userId: userA.id });
     const tokenB = tokenFor({ id: userB.id, role: userB.role, companyId: company.id });
 
-    const res = await request(app).get(`/refresh-tokens/${rt.id}`).set('Authorization', `Bearer ${tokenB}`);
+    const res = await request(app)
+      .get(`/refresh-tokens/${rt.id}`)
+      .set('Authorization', `Bearer ${tokenB}`);
 
     expect(res.status).toBe(403);
   });
@@ -42,7 +46,9 @@ describe('RefreshToken', () => {
     const rt = await createTestRefreshToken({ userId: user.id });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
 
-    const res = await request(app).put(`/refresh-tokens/${rt.id}/revoke`).set('Authorization', `Bearer ${token}`);
+    const res = await request(app)
+      .put(`/refresh-tokens/${rt.id}/revoke`)
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.revoked).toBe(true);

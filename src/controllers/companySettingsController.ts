@@ -1,5 +1,5 @@
-import type { Request, Response, NextFunction } from "express";
-import * as companySettingsService from "../services/companySettingsService";
+import type { Request, Response, NextFunction } from 'express';
+import * as companySettingsService from '../services/companySettingsService';
 
 export async function getCompanySettingsHandler(req: Request, res: Response, next: NextFunction) {
   try {
@@ -10,9 +10,14 @@ export async function getCompanySettingsHandler(req: Request, res: Response, nex
   }
 }
 
-export async function createCompanySettingsHandler(req: Request, res: Response, next: NextFunction) {
+export async function createCompanySettingsHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
-    const { companyName, minDaysNoticeForLeave, defaultAnnualLeaveDays, workWeekStartsMonday } = req.body;
+    const { companyName, minDaysNoticeForLeave, defaultAnnualLeaveDays, workWeekStartsMonday } =
+      req.body;
     const settings = await companySettingsService.createCompanySettings({
       companyId: req.user!.companyId,
       companyName,
@@ -26,9 +31,14 @@ export async function createCompanySettingsHandler(req: Request, res: Response, 
   }
 }
 
-export async function updateCompanySettingsHandler(req: Request, res: Response, next: NextFunction) {
+export async function updateCompanySettingsHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
-    const { companyName, minDaysNoticeForLeave, defaultAnnualLeaveDays, workWeekStartsMonday } = req.body;
+    const { companyName, minDaysNoticeForLeave, defaultAnnualLeaveDays, workWeekStartsMonday } =
+      req.body;
     const settings = await companySettingsService.updateCompanySettings(req.user!.companyId, {
       companyName,
       minDaysNoticeForLeave,

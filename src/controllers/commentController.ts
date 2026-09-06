@@ -1,15 +1,16 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as commentService from '../services/commentService';
+import { buildPaginationMeta, parsePagination } from '../utils/pagination';
 
 export async function getAllCommentsHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const comments = await commentService.getAllComments(req.user!.companyId);
-    res.json(comments);
+    const pagination = parsePagination(req);
+    const { data, total } = await commentService.getAllComments(req.user!.companyId, pagination);
+    res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });
   } catch (err) {
     next(err);
   }
 }
-
 export async function getCommentByIdHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const commentId = Number(req.params.commentId);

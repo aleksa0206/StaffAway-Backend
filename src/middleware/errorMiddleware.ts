@@ -5,7 +5,9 @@ import { logger } from '../config/logger';
 
 export function errorMiddleware(err: unknown, req: Request, res: Response, next: NextFunction) {
   if (err instanceof TwoFactorRequiredError) {
-    res.status(err.statusCode).json({ error: err.message, tempToken: err.tempToken, twoFactorRequired: true });
+    res
+      .status(err.statusCode)
+      .json({ error: err.message, tempToken: err.tempToken, twoFactorRequired: true });
     return;
   }
 

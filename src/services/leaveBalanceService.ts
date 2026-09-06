@@ -2,8 +2,11 @@ import * as leaveBalanceRepository from '../repositories/leaveBalanceRepository'
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 
-export async function getAllLeaveBalances(companyId: number) {
-  return await leaveBalanceRepository.findAllLeaveBalances(companyId);
+export async function getAllLeaveBalances(
+  companyId: number,
+  pagination: { skip: number; take: number }
+) {
+  return await leaveBalanceRepository.findAllLeaveBalances(companyId, pagination);
 }
 
 export async function getLeaveBalanceById(leaveBalanceId: number, companyId: number) {

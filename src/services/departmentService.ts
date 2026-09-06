@@ -2,8 +2,11 @@ import * as departmentRepository from '../repositories/departmentRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 
-export async function getAllDepartments(companyId: number) {
-  return await departmentRepository.findAllDepartments(companyId);
+export async function getAllDepartments(
+  companyId: number,
+  pagination: { skip: number; take: number }
+) {
+  return await departmentRepository.findAllDepartments(companyId, pagination);
 }
 
 export async function getDepartmentById(departmentId: number, companyId: number) {

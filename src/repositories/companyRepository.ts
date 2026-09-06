@@ -1,13 +1,15 @@
-import { Company } from "@prisma/client";
-import { prisma } from "../config/prismaClient";
+import { Company } from '@prisma/client';
+import { prisma } from '../config/prismaClient';
 
-export async function findAllCompanies(): Promise<Company[]> {
-  return await prisma.company.findMany();
+export async function findAllCompanies(pagination: { skip: number; take: number }) {
+  const [data, total] = await Promise.all([
+    prisma.company.findMany({ skip: pagination.skip, take: pagination.take }),
+    prisma.company.count(),
+  ]);
+  return { data, total };
 }
 
-export async function findCompanyById(
-  companyId: number,
-): Promise<Company | null> {
+export async function findCompanyById(companyId: number): Promise<Company | null> {
   return await prisma.company.findUnique({ where: { id: companyId } });
 }
 
@@ -19,7 +21,7 @@ export async function updateCompany(
   companyId: number,
   data: {
     name?: string;
-  },
+  }
 ): Promise<Company> {
   return await prisma.company.update({ where: { id: companyId }, data });
 }

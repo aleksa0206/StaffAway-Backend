@@ -37,7 +37,11 @@ describe('Resursi ogranicени samo na Hr rolu (Department, LeaveType, Holiday,
     {
       name: 'LeaveType',
       basePath: '/leave-types',
-      createPayload: () => ({ name: 'Sick Leave', requiresApproval: true, countsTowardBalance: true }),
+      createPayload: () => ({
+        name: 'Sick Leave',
+        requiresApproval: true,
+        countsTowardBalance: true,
+      }),
       seed: (companyId) => createTestLeaveType(companyId),
     },
     {

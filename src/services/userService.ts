@@ -1,23 +1,22 @@
-import bcrypt from "bcrypt";
-import * as userRepository from "../repositories/userRepository";
-import * as leaveTypeRepository from "../repositories/leaveTypeRepository";
-import * as leaveBalanceRepository from "../repositories/leaveBalanceRepository";
-import * as companySettingsRepository from "../repositories/companySettingsRepository";
+import bcrypt from 'bcrypt';
+import * as userRepository from '../repositories/userRepository';
+import * as leaveTypeRepository from '../repositories/leaveTypeRepository';
+import * as leaveBalanceRepository from '../repositories/leaveBalanceRepository';
+import * as companySettingsRepository from '../repositories/companySettingsRepository';
 import * as auditLogRepository from '../repositories/auditLogRepository';
 import * as departmentRepository from '../repositories/departmentRepository';
-import { NotFoundError } from "../errors/NotFoundError";
-import { ForbiddenError } from "../errors/ForbiddenError";
+import { NotFoundError } from '../errors/NotFoundError';
+import { ForbiddenError } from '../errors/ForbiddenError';
 import { prisma } from '../config/prismaClient';
 import { Prisma } from '@prisma/client';
 
-
-export async function getAllUsers(companyId: number) {
-  return await userRepository.findAll(companyId);
+export async function getAllUsers(companyId: number, pagination: { skip: number; take: number }) {
+  return await userRepository.findAll(companyId, pagination);
 }
 
 export async function getUserById(userId: number, companyId: number) {
   const user = await userRepository.findById(userId);
-  if (!user) throw new NotFoundError("User");
+  if (!user) throw new NotFoundError('User');
   if (user.companyId !== companyId) throw new ForbiddenError();
   return user;
 }
@@ -30,26 +29,30 @@ async function assertManagerInSameCompany(managerId: number | null | undefined, 
   }
 }
 
-async function assertDepartmentInSameCompany(departmentId: number | null | undefined, companyId: number) {
+async function assertDepartmentInSameCompany(
+  departmentId: number | null | undefined,
+  companyId: number
+) {
   if (departmentId === null || departmentId === undefined) return;
   const department = await departmentRepository.findDepartmentById(departmentId);
   if (!department || department.companyId !== companyId) {
     throw new ForbiddenError('Department must belong to the same company');
   }
-}export async function createUser(
+}
+export async function createUser(
   input: {
     firstName: string;
     lastName: string;
     email: string;
     password: string;
-    role: "Employee" | "Manager" | "Hr";
+    role: 'Employee' | 'Manager' | 'Hr';
     managerId: number | null;
     hireDate: Date;
   },
-  requestingUser: { companyId: number; role: string },
+  requestingUser: { companyId: number; role: string }
 ) {
-  if (requestingUser.role !== "Hr") {
-    throw new ForbiddenError("Only Hr can create new users");
+  if (requestingUser.role !== 'Hr') {
+    throw new ForbiddenError('Only Hr can create new users');
   }
 
   await assertManagerInSameCompany(input.managerId, requestingUser.companyId);
@@ -80,12 +83,13 @@ async function assertDepartmentInSameCompany(departmentId: number | null | undef
 async function initializeLeaveBalancesForUser(
   userId: number,
   companyId: number,
-  tx: Prisma.TransactionClient,
+  tx: Prisma.TransactionClient
 ) {
-  const [leaveTypes, settings] = await Promise.all([
-    leaveTypeRepository.findAllLeaveTypes(companyId),
+  const [leaveTypesResult, settings] = await Promise.all([
+    leaveTypeRepository.findAllLeaveTypes(companyId, { skip: 0, take: 1000 }),
     companySettingsRepository.findCompanySettingsByCompanyId(companyId),
   ]);
+  const leaveTypes = leaveTypesResult.data;
 
   const defaultDays = settings?.defaultAnnualLeaveDays ?? 20;
   const currentYear = new Date().getFullYear();
@@ -117,7 +121,8 @@ export async function updateUser(
     hireDate?: Date;
   },
   requestingUser: { userId: number; companyId: number; role: string }
-) {  const existing = await userRepository.findById(targetUserId);
+) {
+  const existing = await userRepository.findById(targetUserId);
   if (!existing) throw new NotFoundError('User');
   if (existing.companyId !== requestingUser.companyId) throw new ForbiddenError();
 
@@ -131,7 +136,7 @@ export async function updateUser(
     throw new ForbiddenError('Only Hr can change roles');
   }
 
-  await assertManagerInSameCompany(data.managerId, requestingUser.companyId);       // <- DODATO
+  await assertManagerInSameCompany(data.managerId, requestingUser.companyId); // <- DODATO
   await assertDepartmentInSameCompany(data.departmentId, requestingUser.companyId); // <- DODATO
 
   const updated = await userRepository.update(targetUserId, data);

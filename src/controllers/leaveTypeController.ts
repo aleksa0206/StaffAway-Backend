@@ -1,10 +1,15 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as leaveTypeService from '../services/leaveTypeService';
+import { buildPaginationMeta, parsePagination } from '../utils/pagination';
 
 export async function getAllLeaveTypesHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const leaveTypes = await leaveTypeService.getAllLeaveTypes(req.user!.companyId);
-    res.json(leaveTypes);
+    const pagination = parsePagination(req);
+    const { data, total } = await leaveTypeService.getAllLeaveTypes(
+      req.user!.companyId,
+      pagination
+    );
+    res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });
   } catch (err) {
     next(err);
   }
@@ -39,11 +44,11 @@ export async function updateLeaveTypeHandler(req: Request, res: Response, next: 
   try {
     const leaveTypeId = Number(req.params.leaveTypeId);
     const { name, requiresApproval, countsTowardBalance } = req.body;
-    const updated = await leaveTypeService.updateLeaveType(
-      leaveTypeId,
-      req.user!.companyId,
-      { name, requiresApproval, countsTowardBalance }
-    );
+    const updated = await leaveTypeService.updateLeaveType(leaveTypeId, req.user!.companyId, {
+      name,
+      requiresApproval,
+      countsTowardBalance,
+    });
     res.json(updated);
   } catch (err) {
     next(err);

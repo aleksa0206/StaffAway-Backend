@@ -1,10 +1,12 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as userService from '../services/userService';
+import { buildPaginationMeta, parsePagination } from '../utils/pagination';
 
 export async function getAllUsersHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const users = await userService.getAllUsers(req.user!.companyId);
-    res.json(users);
+    const pagination = parsePagination(req);
+    const { data, total } = await userService.getAllUsers(req.user!.companyId, pagination);
+    res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });
   } catch (err) {
     next(err);
   }
@@ -39,7 +41,15 @@ export async function updateUserHandler(req: Request, res: Response, next: NextF
     const { firstName, lastName, email, role, managerId, departmentId, hireDate } = req.body;
     const updated = await userService.updateUser(
       targetUserId,
-      { firstName, lastName, email, role, managerId, departmentId, hireDate: hireDate && new Date(hireDate) },
+      {
+        firstName,
+        lastName,
+        email,
+        role,
+        managerId,
+        departmentId,
+        hireDate: hireDate && new Date(hireDate),
+      },
       { userId: req.user!.userId, companyId: req.user!.companyId, role: req.user!.role }
     );
     res.json(updated);

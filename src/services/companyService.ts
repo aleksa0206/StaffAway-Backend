@@ -10,9 +10,12 @@ function assertPlatformAdmin(companyId: number) {
   }
 }
 
-export async function getAllCompanies(requestingCompanyId: number) {
+export async function getAllCompanies(
+  requestingCompanyId: number,
+  pagination: { skip: number; take: number }
+) {
   assertPlatformAdmin(requestingCompanyId);
-  return await companyRepository.findAllCompanies();
+  return await companyRepository.findAllCompanies(pagination);
 }
 
 export async function getOwnCompany(companyId: number) {

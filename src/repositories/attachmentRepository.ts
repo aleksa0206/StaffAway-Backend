@@ -1,10 +1,16 @@
 import { Attachment } from '@prisma/client';
 import { prisma } from '../config/prismaClient';
 
-export async function findAllAttachmentsByCompany(companyId: number): Promise<Attachment[]> {
-  return await prisma.attachment.findMany({
-    where: { leaveRequest: { companyId } },
-  });
+export async function findAllAttachmentsByCompany(
+  companyId: number,
+  pagination: { skip: number; take: number }
+) {
+  const where = { leaveRequest: { companyId } };
+  const [data, total] = await Promise.all([
+    prisma.attachment.findMany({ where, skip: pagination.skip, take: pagination.take }),
+    prisma.attachment.count({ where }),
+  ]);
+  return { data, total };
 }
 
 export async function findAttachmentById(attachmentId: number) {

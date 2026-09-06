@@ -1,65 +1,52 @@
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import crypto from "crypto";
-import { TOTP, NobleCryptoPlugin, ScureBase32Plugin } from "otplib";
-import QRCode from "qrcode";
-import * as userRepository from "../repositories/userRepository";
-import * as refreshTokenRepository from "../repositories/refreshTokenRepository";
-import { UnauthorizedError } from "../errors/UnauthorizedError";
-import { LockedError } from "../errors/LockedError";
-import { TwoFactorRequiredError } from "../errors/TwoFactorRequiredError";
-import { sendPasswordResetEmail } from "./emailService";
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { TOTP, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib';
+import QRCode from 'qrcode';
+import * as userRepository from '../repositories/userRepository';
+import * as refreshTokenRepository from '../repositories/refreshTokenRepository';
+import { UnauthorizedError } from '../errors/UnauthorizedError';
+import { LockedError } from '../errors/LockedError';
+import { TwoFactorRequiredError } from '../errors/TwoFactorRequiredError';
+import { sendPasswordResetEmail } from './emailService';
 
-
-const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; 
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
 const totp = new TOTP({
   crypto: new NobleCryptoPlugin(),
   base32: new ScureBase32Plugin(),
-  issuer: "StaffAway",
+  issuer: 'StaffAway',
 });
 
 // ... ostale konstante (REFRESH_TOKEN_TTL_MS, itd.) ostaju iste
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
-const TEMP_TOKEN_TTL = "5m";
+const TEMP_TOKEN_TTL = '5m';
 
 function hashToken(token: string) {
-  return crypto.createHash("sha256").update(token).digest("hex");
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 function generateRefreshToken() {
-  return crypto.randomBytes(40).toString("hex");
+  return crypto.randomBytes(40).toString('hex');
 }
 
-function signAccessToken(user: {
-  id: number;
-  role: string;
-  companyId: number;
-}) {
+function signAccessToken(user: { id: number; role: string; companyId: number }) {
   return jwt.sign(
     { userId: user.id, role: user.role, companyId: user.companyId },
     process.env.JWT_SECRET as string,
-    { expiresIn: "15m" },
+    { expiresIn: '15m' }
   );
 }
 
 function signTempToken(userId: number) {
-  return jwt.sign(
-    { userId, purpose: "2fa-pending" },
-    process.env.JWT_SECRET as string,
-    {
-      expiresIn: TEMP_TOKEN_TTL,
-    },
-  );
+  return jwt.sign({ userId, purpose: '2fa-pending' }, process.env.JWT_SECRET as string, {
+    expiresIn: TEMP_TOKEN_TTL,
+  });
 }
 
-async function issueTokensForUser(user: {
-  id: number;
-  role: string;
-  companyId: number;
-}) {
+async function issueTokensForUser(user: { id: number; role: string; companyId: number }) {
   const accessToken = signAccessToken(user);
   const refreshToken = generateRefreshToken();
 
@@ -76,13 +63,11 @@ export async function login(email: string, password: string) {
   const user = await userRepository.findUserByEmail(email);
 
   if (!user) {
-    throw new UnauthorizedError("Invalid email or password");
+    throw new UnauthorizedError('Invalid email or password');
   }
 
   if (user.lockedUntil && user.lockedUntil > new Date()) {
-    throw new LockedError(
-      "Account is temporarily locked due to too many failed login attempts",
-    );
+    throw new LockedError('Account is temporarily locked due to too many failed login attempts');
   }
 
   const passwordMatches = await bcrypt.compare(password, user.passwordHash);
@@ -91,18 +76,14 @@ export async function login(email: string, password: string) {
     const attemptsAfterThis = user.failedLoginAttempts + 1;
 
     if (attemptsAfterThis >= MAX_FAILED_LOGIN_ATTEMPTS) {
-      await userRepository.setAccountLock(
-        user.id,
-        new Date(Date.now() + LOCKOUT_DURATION_MS),
-        0,
-      );
+      await userRepository.setAccountLock(user.id, new Date(Date.now() + LOCKOUT_DURATION_MS), 0);
       throw new LockedError(
-        "Account locked due to too many failed login attempts. Try again in 15 minutes.",
+        'Account locked due to too many failed login attempts. Try again in 15 minutes.'
       );
     }
 
     await userRepository.incrementFailedLoginAttempts(user.id);
-    throw new UnauthorizedError("Invalid email or password");
+    throw new UnauthorizedError('Invalid email or password');
   }
 
   if (user.failedLoginAttempts > 0 || user.lockedUntil) {
@@ -124,28 +105,23 @@ export async function verifyTwoFactorLogin(tempToken: string, code: string) {
   let payload: { userId: number; purpose: string };
 
   try {
-    payload = jwt.verify(
-      tempToken,
-      process.env.JWT_SECRET as string,
-    ) as typeof payload;
+    payload = jwt.verify(tempToken, process.env.JWT_SECRET as string) as typeof payload;
   } catch {
-    throw new UnauthorizedError("Invalid or expired temporary token");
+    throw new UnauthorizedError('Invalid or expired temporary token');
   }
 
-  if (payload.purpose !== "2fa-pending") {
-    throw new UnauthorizedError("Invalid temporary token");
+  if (payload.purpose !== '2fa-pending') {
+    throw new UnauthorizedError('Invalid temporary token');
   }
 
   const user = await userRepository.findByIdWithAuthFields(payload.userId);
   if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
-    throw new UnauthorizedError(
-      "Two-factor authentication is not enabled for this account",
-    );
+    throw new UnauthorizedError('Two-factor authentication is not enabled for this account');
   }
 
   const result = await totp.verify(code, { secret: user.twoFactorSecret });
   if (!result.valid) {
-    throw new UnauthorizedError("Invalid two-factor code");
+    throw new UnauthorizedError('Invalid two-factor code');
   }
 
   const { accessToken, refreshToken } = await issueTokensForUser(user);
@@ -157,7 +133,7 @@ export async function verifyTwoFactorLogin(tempToken: string, code: string) {
 export async function setupTwoFactor(userId: number) {
   const user = await userRepository.findByIdWithAuthFields(userId);
   if (!user) {
-    throw new UnauthorizedError("User not found");
+    throw new UnauthorizedError('User not found');
   }
 
   const secret = totp.generateSecret();
@@ -172,12 +148,12 @@ export async function setupTwoFactor(userId: number) {
 export async function confirmTwoFactor(userId: number, code: string) {
   const user = await userRepository.findByIdWithAuthFields(userId);
   if (!user || !user.twoFactorSecret) {
-    throw new UnauthorizedError("Two-factor setup was not initiated");
+    throw new UnauthorizedError('Two-factor setup was not initiated');
   }
 
   const result = await totp.verify(code, { secret: user.twoFactorSecret });
   if (!result.valid) {
-    throw new UnauthorizedError("Invalid two-factor code");
+    throw new UnauthorizedError('Invalid two-factor code');
   }
 
   await userRepository.enableTwoFactor(userId);
@@ -188,18 +164,17 @@ export async function disableTwoFactor(userId: number) {
 
 export async function refresh(oldRefreshToken: string) {
   const hashed = hashToken(oldRefreshToken);
-  const existing =
-    await refreshTokenRepository.findRefreshTokenByTokenHash(hashed);
+  const existing = await refreshTokenRepository.findRefreshTokenByTokenHash(hashed);
 
   if (!existing || existing.revoked || existing.expiresAt < new Date()) {
-    throw new UnauthorizedError("Invalid or expired refresh token");
+    throw new UnauthorizedError('Invalid or expired refresh token');
   }
 
   await refreshTokenRepository.revokeRefreshToken(existing.id);
 
   const user = await userRepository.findById(existing.userId);
   if (!user) {
-    throw new UnauthorizedError("User no longer exists");
+    throw new UnauthorizedError('User no longer exists');
   }
 
   const accessToken = signAccessToken({
@@ -220,8 +195,7 @@ export async function refresh(oldRefreshToken: string) {
 
 export async function logout(oldRefreshToken: string) {
   const hashed = hashToken(oldRefreshToken);
-  const existing =
-    await refreshTokenRepository.findRefreshTokenByTokenHash(hashed);
+  const existing = await refreshTokenRepository.findRefreshTokenByTokenHash(hashed);
   if (existing) {
     await refreshTokenRepository.revokeRefreshToken(existing.id);
   }

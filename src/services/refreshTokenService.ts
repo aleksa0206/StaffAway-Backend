@@ -2,8 +2,11 @@ import * as refreshTokenRepository from '../repositories/refreshTokenRepository'
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 
-export async function getAllRefreshTokens(userId: number) {
-  return await refreshTokenRepository.findAllRefreshTokens(userId);
+export async function getAllRefreshTokens(
+  userId: number,
+  pagination: { skip: number; take: number }
+) {
+  return await refreshTokenRepository.findAllRefreshTokens(userId, pagination);
 }
 
 export async function getRefreshTokenById(refreshTokenId: number, userId: number) {

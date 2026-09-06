@@ -3,8 +3,11 @@ import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 import * as userRepository from '../repositories/userRepository';
 
-export async function getAllWorkSchedules(companyId: number) {
-  return await workScheduleRepository.findAllWorkSchedules(companyId);
+export async function getAllWorkSchedules(
+  companyId: number,
+  pagination: { skip: number; take: number }
+) {
+  return await workScheduleRepository.findAllWorkSchedules(companyId, pagination);
 }
 
 export async function getWorkScheduleById(workScheduleId: number, companyId: number) {

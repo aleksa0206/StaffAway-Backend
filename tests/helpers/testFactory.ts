@@ -29,11 +29,14 @@ export async function createTestUser(params: {
   return { user, rawPassword: password };
 }
 
-export async function createTestLeaveType(companyId: number, overrides: Partial<{
-  name: string;
-  requiresApproval: boolean;
-  countsTowardBalance: boolean;
-}> = {}) {
+export async function createTestLeaveType(
+  companyId: number,
+  overrides: Partial<{
+    name: string;
+    requiresApproval: boolean;
+    countsTowardBalance: boolean;
+  }> = {}
+) {
   return await prisma.leaveType.create({
     data: {
       name: overrides.name ?? 'Annual Leave',
@@ -78,7 +81,10 @@ export async function createTestDepartment(companyId: number, name = 'Engineerin
   return await prisma.department.create({ data: { name, companyId } });
 }
 
-export async function createTestHoliday(companyId: number, overrides: Partial<{ name: string; date: Date; isRecurring: boolean }> = {}) {
+export async function createTestHoliday(
+  companyId: number,
+  overrides: Partial<{ name: string; date: Date; isRecurring: boolean }> = {}
+) {
   return await prisma.holiday.create({
     data: {
       name: overrides.name ?? 'New Year',
@@ -89,7 +95,12 @@ export async function createTestHoliday(companyId: number, overrides: Partial<{ 
   });
 }
 
-export async function createTestWorkSchedule(params: { userId: number; companyId: number; hoursPerWeek?: number; isPartTime?: boolean }) {
+export async function createTestWorkSchedule(params: {
+  userId: number;
+  companyId: number;
+  hoursPerWeek?: number;
+  isPartTime?: boolean;
+}) {
   return await prisma.workSchedule.create({
     data: {
       userId: params.userId,
@@ -100,7 +111,10 @@ export async function createTestWorkSchedule(params: { userId: number; companyId
   });
 }
 
-export async function createTestApiKey(companyId: number, overrides: Partial<{ key: string; name: string }> = {}) {
+export async function createTestApiKey(
+  companyId: number,
+  overrides: Partial<{ key: string; name: string }> = {}
+) {
   return await prisma.apiKey.create({
     data: {
       key: overrides.key ?? `key-${Date.now()}-${Math.random()}`,
@@ -132,7 +146,10 @@ export async function createRawLeaveRequest(params: {
   });
 }
 
-export async function createTestAttachment(leaveRequestId: number, overrides: Partial<{ fileName: string; filePath: string }> = {}) {
+export async function createTestAttachment(
+  leaveRequestId: number,
+  overrides: Partial<{ fileName: string; filePath: string }> = {}
+) {
   return await prisma.attachment.create({
     data: {
       leaveRequestId,
@@ -142,7 +159,12 @@ export async function createTestAttachment(leaveRequestId: number, overrides: Pa
   });
 }
 
-export async function createTestComment(params: { leaveRequestId: number; authorId: number; companyId: number; text?: string }) {
+export async function createTestComment(params: {
+  leaveRequestId: number;
+  authorId: number;
+  companyId: number;
+  text?: string;
+}) {
   return await prisma.comment.create({
     data: {
       leaveRequestId: params.leaveRequestId,
@@ -169,7 +191,12 @@ export async function createTestNotification(params: {
   });
 }
 
-export async function createTestRefreshToken(params: { userId: number; token?: string; expiresAt?: Date; revoked?: boolean }) {
+export async function createTestRefreshToken(params: {
+  userId: number;
+  token?: string;
+  expiresAt?: Date;
+  revoked?: boolean;
+}) {
   return await prisma.refreshToken.create({
     data: {
       userId: params.userId,

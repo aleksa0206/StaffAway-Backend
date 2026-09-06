@@ -2,8 +2,11 @@ import * as holidayRepository from '../repositories/holidayRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 
-export async function getAllHolidays(companyId: number) {
-  return await holidayRepository.findAllHolidays(companyId);
+export async function getAllHolidays(
+  companyId: number,
+  pagination: { skip: number; take: number }
+) {
+  return await holidayRepository.findAllHolidays(companyId, pagination);
 }
 
 export async function getHolidayById(holidayId: number, companyId: number) {

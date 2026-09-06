@@ -1,10 +1,15 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as refreshTokenService from '../services/refreshTokenService';
+import { buildPaginationMeta, parsePagination } from '../utils/pagination';
 
 export async function getAllRefreshTokensHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const refreshTokens = await refreshTokenService.getAllRefreshTokens(req.user!.userId);
-    res.json(refreshTokens);
+    const pagination = parsePagination(req);
+    const { data, total } = await refreshTokenService.getAllRefreshTokens(
+      req.user!.userId,
+      pagination
+    );
+    res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });
   } catch (err) {
     next(err);
   }
@@ -13,7 +18,10 @@ export async function getAllRefreshTokensHandler(req: Request, res: Response, ne
 export async function getRefreshTokenByIdHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const refreshTokenId = Number(req.params.refreshTokenId);
-    const refreshToken = await refreshTokenService.getRefreshTokenById(refreshTokenId, req.user!.userId);
+    const refreshToken = await refreshTokenService.getRefreshTokenById(
+      refreshTokenId,
+      req.user!.userId
+    );
     res.json(refreshToken);
   } catch (err) {
     next(err);
@@ -37,7 +45,10 @@ export async function createRefreshTokenHandler(req: Request, res: Response, nex
 export async function revokeRefreshTokenHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const refreshTokenId = Number(req.params.refreshTokenId);
-    const refreshToken = await refreshTokenService.revokeRefreshToken(refreshTokenId, req.user!.userId);
+    const refreshToken = await refreshTokenService.revokeRefreshToken(
+      refreshTokenId,
+      req.user!.userId
+    );
     res.json(refreshToken);
   } catch (err) {
     next(err);
@@ -47,7 +58,10 @@ export async function revokeRefreshTokenHandler(req: Request, res: Response, nex
 export async function deleteRefreshTokenHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const refreshTokenId = Number(req.params.refreshTokenId);
-    const refreshToken = await refreshTokenService.deleteRefreshToken(refreshTokenId, req.user!.userId);
+    const refreshToken = await refreshTokenService.deleteRefreshToken(
+      refreshTokenId,
+      req.user!.userId
+    );
     res.json(refreshToken);
   } catch (err) {
     next(err);

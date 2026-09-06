@@ -1,46 +1,42 @@
-import { Router } from "express";
+import { Router } from 'express';
 import {
   getAllWorkSchedulesHandler,
   getWorkScheduleByIdHandler,
   createWorkScheduleHandler,
   updateWorkScheduleHandler,
   deleteWorkScheduleHandler,
-} from "../controllers/workScheduleController";
-import { authMiddleware } from "../middleware/authMiddleware";
-import { validate } from "../middleware/validate";
+} from '../controllers/workScheduleController';
+import { authMiddleware } from '../middleware/authMiddleware';
+import { validate } from '../middleware/validate';
 import {
   createWorkScheduleSchema,
   updateWorkScheduleSchema,
-} from "../validation/workScheduleSchemas";
+} from '../validation/workScheduleSchemas';
 import { requireRole } from '../middleware/requireRole';
 
 const router = Router();
 
-router.get("/work-schedules", authMiddleware, getAllWorkSchedulesHandler);
-router.get(
-  "/work-schedules/:workScheduleId",
-  authMiddleware,
-  getWorkScheduleByIdHandler,
-);
+router.get('/work-schedules', authMiddleware, getAllWorkSchedulesHandler);
+router.get('/work-schedules/:workScheduleId', authMiddleware, getWorkScheduleByIdHandler);
 router.post(
-  "/work-schedules",
+  '/work-schedules',
   authMiddleware,
-  requireRole("Hr"),
+  requireRole('Hr'),
   validate(createWorkScheduleSchema),
-  createWorkScheduleHandler,
+  createWorkScheduleHandler
 );
 router.put(
-  "/work-schedules/:workScheduleId",
+  '/work-schedules/:workScheduleId',
   authMiddleware,
-  requireRole("Hr"),
+  requireRole('Hr'),
   validate(updateWorkScheduleSchema),
-  updateWorkScheduleHandler,
+  updateWorkScheduleHandler
 );
 router.delete(
-  "/work-schedules/:workScheduleId",
+  '/work-schedules/:workScheduleId',
   authMiddleware,
-  requireRole("Hr"),
-  deleteWorkScheduleHandler,
+  requireRole('Hr'),
+  deleteWorkScheduleHandler
 );
 
 export default router;

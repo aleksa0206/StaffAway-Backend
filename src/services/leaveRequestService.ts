@@ -1,32 +1,32 @@
-import * as leaveRequestRepository from "../repositories/leaveRequestRepository";
-import * as leaveTypeRepository from "../repositories/leaveTypeRepository";
-import * as leaveBalanceRepository from "../repositories/leaveBalanceRepository";
-import * as statusHistoryRepository from "../repositories/statusHistoryRepository";
-import * as companySettingsRepository from "../repositories/companySettingsRepository";
+import * as leaveRequestRepository from '../repositories/leaveRequestRepository';
+import * as leaveTypeRepository from '../repositories/leaveTypeRepository';
+import * as leaveBalanceRepository from '../repositories/leaveBalanceRepository';
+import * as statusHistoryRepository from '../repositories/statusHistoryRepository';
+import * as companySettingsRepository from '../repositories/companySettingsRepository';
 import * as notificationRepository from '../repositories/notificationRepository';
-import { NotFoundError } from "../errors/NotFoundError";
-import { ForbiddenError } from "../errors/ForbiddenError";
-import { ConflictError } from "../errors/ConflictError";
-import { prisma } from "../config/prismaClient";
-import { Prisma } from "@prisma/client";
+import { NotFoundError } from '../errors/NotFoundError';
+import { ForbiddenError } from '../errors/ForbiddenError';
+import { ConflictError } from '../errors/ConflictError';
+import { prisma } from '../config/prismaClient';
+import { Prisma } from '@prisma/client';
 
-type LeaveStatus = "Pending" | "Approval" | "Rejected";
+type LeaveStatus = 'Pending' | 'Approval' | 'Rejected';
 
 async function assertNoOverlap(
   userId: number,
   startDate: Date,
   endDate: Date,
-  excludeLeaveRequestId?: number,
+  excludeLeaveRequestId?: number
 ) {
   const overlapping = await leaveRequestRepository.findOverlappingLeaveRequests(
     userId,
     startDate,
     endDate,
-    excludeLeaveRequestId,
+    excludeLeaveRequestId
   );
 
   if (overlapping.length > 0) {
-    throw new ConflictError("Leave request overlaps with an existing request");
+    throw new ConflictError('Leave request overlaps with an existing request');
   }
 }
 
@@ -37,15 +37,15 @@ async function adjustLeaveBalanceOnStatusChange(
   totalDays: number,
   year: number,
   oldStatus: LeaveStatus,
-  newStatus: LeaveStatus,
+  newStatus: LeaveStatus
 ) {
   const leaveType = await leaveTypeRepository.findLeaveTypeById(leaveTypeId);
   if (!leaveType || !leaveType.countsTowardBalance) {
     return;
   }
 
-  const wasApproved = oldStatus === "Approval";
-  const isApproved = newStatus === "Approval";
+  const wasApproved = oldStatus === 'Approval';
+  const isApproved = newStatus === 'Approval';
 
   if (wasApproved === isApproved) {
     return;
@@ -55,24 +55,23 @@ async function adjustLeaveBalanceOnStatusChange(
     userId,
     leaveTypeId,
     year,
-    client,
+    client
   );
   if (!balance) {
-    throw new NotFoundError("LeaveBalance");
+    throw new NotFoundError('LeaveBalance');
   }
 
   const delta = isApproved ? totalDays : -totalDays;
   const newUsedDays = Math.max(0, balance.usedDays + delta);
 
-  await leaveBalanceRepository.updateLeaveBalance(
-    balance.id,
-    { usedDays: newUsedDays },
-    client,
-  );
+  await leaveBalanceRepository.updateLeaveBalance(balance.id, { usedDays: newUsedDays }, client);
 }
 
-export async function getAllLeaveRequests(companyId: number) {
-  return await leaveRequestRepository.findAllLeaveRequests(companyId);
+export async function getAllLeaveRequests(
+  companyId: number,
+  pagination: { skip: number; take: number }
+) {
+  return await leaveRequestRepository.findAllLeaveRequests(companyId, pagination);
 }
 
 export async function updateLeaveRequest(
@@ -87,11 +86,10 @@ export async function updateLeaveRequest(
     status?: LeaveStatus;
     comment?: string;
     approvedById?: number;
-  },
+  }
 ) {
-  const leaveRequest =
-    await leaveRequestRepository.findLeaveRequestById(leaveRequestId);
-  if (!leaveRequest) throw new NotFoundError("LeaveRequest");
+  const leaveRequest = await leaveRequestRepository.findLeaveRequestById(leaveRequestId);
+  if (!leaveRequest) throw new NotFoundError('LeaveRequest');
   if (leaveRequest.companyId !== companyId) throw new ForbiddenError();
 
   const effectiveStartDate = data.startDate ?? leaveRequest.startDate;
@@ -103,7 +101,7 @@ export async function updateLeaveRequest(
       leaveRequest.userId,
       effectiveStartDate,
       effectiveEndDate,
-      leaveRequestId,
+      leaveRequestId
     );
   }
 
@@ -111,60 +109,55 @@ export async function updateLeaveRequest(
   const newStatus = data.status ?? oldStatus;
   const statusChanged = newStatus !== oldStatus;
 
-  if (statusChanged && changedByRole === "Employee") {
-    throw new ForbiddenError(
-      "Only Manager or Hr can approve or reject leave requests",
-    );
-  }return await prisma.$transaction(async (tx) => {
-  if (statusChanged) {
-    await adjustLeaveBalanceOnStatusChange(
-      tx,
-      leaveRequest.userId,
-      leaveRequest.leaveTypeId,
-      effectiveTotalDays,
-      effectiveStartDate.getFullYear(),
-      oldStatus,
-      newStatus,
-    );
+  if (statusChanged && changedByRole === 'Employee') {
+    throw new ForbiddenError('Only Manager or Hr can approve or reject leave requests');
+  }
+  return await prisma.$transaction(async (tx) => {
+    if (statusChanged) {
+      await adjustLeaveBalanceOnStatusChange(
+        tx,
+        leaveRequest.userId,
+        leaveRequest.leaveTypeId,
+        effectiveTotalDays,
+        effectiveStartDate.getFullYear(),
+        oldStatus,
+        newStatus
+      );
 
-    await statusHistoryRepository.createStatusHistory(
-      { leaveRequestId, changedById, companyId, oldStatus, newStatus },
-      tx,
-    );
-
-    if (newStatus === 'Approval' || newStatus === 'Rejected') {
-      await notificationRepository.createNotification(
-        {
-          userId: leaveRequest.userId,
-          message: newStatus === 'Approval'
-            ? 'Your leave request has been approved.'
-            : 'Your leave request has been rejected.',
-          isRead: false,
-          type: newStatus === 'Approval' ? 'LeaveRequestApproved' : 'LeaveRequestRejected',
-        },
+      await statusHistoryRepository.createStatusHistory(
+        { leaveRequestId, changedById, companyId, oldStatus, newStatus },
         tx
       );
-    }
-  }
 
-  return await leaveRequestRepository.updateLeaveRequest(leaveRequestId, data, tx);
+      if (newStatus === 'Approval' || newStatus === 'Rejected') {
+        await notificationRepository.createNotification(
+          {
+            userId: leaveRequest.userId,
+            message:
+              newStatus === 'Approval'
+                ? 'Your leave request has been approved.'
+                : 'Your leave request has been rejected.',
+            isRead: false,
+            type: newStatus === 'Approval' ? 'LeaveRequestApproved' : 'LeaveRequestRejected',
+          },
+          tx
+        );
+      }
+    }
+
+    return await leaveRequestRepository.updateLeaveRequest(leaveRequestId, data, tx);
   });
 }
 
-export async function getLeaveRequestById(
-  leaveRequestId: number,
-  companyId: number,
-) {
-  const leaveRequest =
-    await leaveRequestRepository.findLeaveRequestById(leaveRequestId);
-  if (!leaveRequest) throw new NotFoundError("LeaveRequest");
+export async function getLeaveRequestById(leaveRequestId: number, companyId: number) {
+  const leaveRequest = await leaveRequestRepository.findLeaveRequestById(leaveRequestId);
+  if (!leaveRequest) throw new NotFoundError('LeaveRequest');
   if (leaveRequest.companyId !== companyId) throw new ForbiddenError();
   return leaveRequest;
 }
 
 async function assertMinimumNotice(companyId: number, startDate: Date) {
-  const settings =
-    await companySettingsRepository.findCompanySettingsByCompanyId(companyId);
+  const settings = await companySettingsRepository.findCompanySettingsByCompanyId(companyId);
   const minDaysNotice = settings?.minDaysNoticeForLeave ?? 1;
 
   const now = new Date();
@@ -173,7 +166,7 @@ async function assertMinimumNotice(companyId: number, startDate: Date) {
 
   if (daysUntilStart < minDaysNotice) {
     throw new ConflictError(
-      `Leave requests must be submitted at least ${minDaysNotice} day(s) in advance`,
+      `Leave requests must be submitted at least ${minDaysNotice} day(s) in advance`
     );
   }
 }
@@ -187,7 +180,7 @@ export async function createLeaveRequest(data: {
   leaveTypeId: number;
   companyId: number;
 }) {
-  await assertMinimumNotice(data.companyId, data.startDate);   // <- DODAJ OVU LINIJU
+  await assertMinimumNotice(data.companyId, data.startDate); // <- DODAJ OVU LINIJU
   await assertNoOverlap(data.userId, data.startDate, data.endDate);
 
   return await leaveRequestRepository.createLeaveRequest({
@@ -196,13 +189,9 @@ export async function createLeaveRequest(data: {
   });
 }
 
-export async function deleteLeaveRequest(
-  leaveRequestId: number,
-  companyId: number,
-) {
-  const leaveRequest =
-    await leaveRequestRepository.findLeaveRequestById(leaveRequestId);
-  if (!leaveRequest) throw new NotFoundError("LeaveRequest");
+export async function deleteLeaveRequest(leaveRequestId: number, companyId: number) {
+  const leaveRequest = await leaveRequestRepository.findLeaveRequestById(leaveRequestId);
+  if (!leaveRequest) throw new NotFoundError('LeaveRequest');
   if (leaveRequest.companyId !== companyId) throw new ForbiddenError();
 
   return await leaveRequestRepository.removeLeaveRequest(leaveRequestId);

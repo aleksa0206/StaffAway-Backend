@@ -2,8 +2,11 @@ import * as leaveTypeRepository from '../repositories/leaveTypeRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 
-export async function getAllLeaveTypes(companyId: number) {
-  return await leaveTypeRepository.findAllLeaveTypes(companyId);
+export async function getAllLeaveTypes(
+  companyId: number,
+  pagination: { skip: number; take: number }
+) {
+  return await leaveTypeRepository.findAllLeaveTypes(companyId, pagination);
 }
 
 export async function getLeaveTypeById(leaveTypeId: number, companyId: number) {

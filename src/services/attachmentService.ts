@@ -3,8 +3,11 @@ import * as leaveRequestRepository from '../repositories/leaveRequestRepository'
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 
-export async function getAllAttachments(companyId: number) {
-  return await attachmentRepository.findAllAttachmentsByCompany(companyId);
+export async function getAllAttachments(
+  companyId: number,
+  pagination: { skip: number; take: number }
+) {
+  return await attachmentRepository.findAllAttachmentsByCompany(companyId, pagination);
 }
 
 export async function getAttachmentById(attachmentId: number, companyId: number) {

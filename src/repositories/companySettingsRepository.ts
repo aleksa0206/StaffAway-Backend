@@ -1,7 +1,9 @@
-import { CompanySettings } from "@prisma/client";
-import { prisma } from "../config/prismaClient";
+import { CompanySettings } from '@prisma/client';
+import { prisma } from '../config/prismaClient';
 
-export async function findCompanySettingsByCompanyId(companyId: number): Promise<CompanySettings | null> {
+export async function findCompanySettingsByCompanyId(
+  companyId: number
+): Promise<CompanySettings | null> {
   return await prisma.companySettings.findUnique({ where: { companyId } });
 }
 
@@ -22,7 +24,7 @@ export async function updateCompanySettings(
     minDaysNoticeForLeave?: number;
     defaultAnnualLeaveDays?: number;
     workWeekStartsMonday?: boolean;
-  },
+  }
 ): Promise<CompanySettings> {
   return await prisma.companySettings.update({ where: { companyId }, data });
 }

@@ -1,10 +1,15 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as departmentService from '../services/departmentService';
+import { parsePagination, buildPaginationMeta } from '../utils/pagination';
 
 export async function getAllDepartmentsHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const departments = await departmentService.getAllDepartments(req.user!.companyId);
-    res.json(departments);
+    const pagination = parsePagination(req);
+    const { data, total } = await departmentService.getAllDepartments(
+      req.user!.companyId,
+      pagination
+    );
+    res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });
   } catch (err) {
     next(err);
   }
@@ -51,7 +56,10 @@ export async function updateDepartmentHandler(req: Request, res: Response, next:
 export async function deleteDepartmentHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const departmentId = Number(req.params.departmentId);
-    const deletedDepartment = await departmentService.deleteDepartment(departmentId, req.user!.companyId);
+    const deletedDepartment = await departmentService.deleteDepartment(
+      departmentId,
+      req.user!.companyId
+    );
     res.json(deletedDepartment);
   } catch (err) {
     next(err);

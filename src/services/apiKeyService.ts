@@ -2,8 +2,8 @@ import * as apiKeyRepository from '../repositories/apiKeyRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 
-export async function getAllApiKeys(companyId: number) {
-  return await apiKeyRepository.findAllApiKeys(companyId);
+export async function getAllApiKeys(companyId: number, pagination: { skip: number; take: number }) {
+  return await apiKeyRepository.findAllApiKeys(companyId, pagination);
 }
 
 export async function getApiKeyById(apiKeyId: number, companyId: number) {

@@ -1,5 +1,5 @@
-import { User } from "@prisma/client";
-import { prisma } from "../config/prismaClient";
+import { User } from '@prisma/client';
+import { prisma } from '../config/prismaClient';
 import { Prisma } from '@prisma/client';
 
 type PrismaClientOrTx = typeof prisma | Prisma.TransactionClient;
@@ -18,11 +18,17 @@ const userSafeSelect = {
   updatedAt: true,
 } as const;
 
-export async function findAll(companyId: number) {
-  return await prisma.user.findMany({
-    where: { companyId },
-    select: userSafeSelect,
-  });
+export async function findAll(companyId: number, pagination: { skip: number; take: number }) {
+  const [data, total] = await Promise.all([
+    prisma.user.findMany({
+      where: { companyId },
+      select: userSafeSelect,
+      skip: pagination.skip,
+      take: pagination.take,
+    }),
+    prisma.user.count({ where: { companyId } }),
+  ]);
+  return { data, total };
 }
 
 export async function findById(userId: number) {
@@ -54,11 +60,11 @@ export async function update(
     firstName: string;
     lastName: string;
     email: string;
-    role: "Employee" | "Manager" | "Hr";
+    role: 'Employee' | 'Manager' | 'Hr';
     managerId: number | null;
     departmentId: number | null;
     hireDate: Date;
-  }>,
+  }>
 ) {
   return await prisma.user.update({
     where: { id: userId },
@@ -88,7 +94,7 @@ export async function incrementFailedLoginAttempts(userId: number) {
 export async function setAccountLock(
   userId: number,
   lockedUntil: Date | null,
-  failedLoginAttempts: number,
+  failedLoginAttempts: number
 ) {
   return await prisma.user.update({
     where: { id: userId },
@@ -121,7 +127,11 @@ export async function findByIdWithAuthFields(userId: number) {
   return await prisma.user.findUnique({ where: { id: userId } });
 }
 
-export async function setPasswordResetToken(userId: number, tokenHash: string | null, expiresAt: Date | null) {
+export async function setPasswordResetToken(
+  userId: number,
+  tokenHash: string | null,
+  expiresAt: Date | null
+) {
   return await prisma.user.update({
     where: { id: userId },
     data: { resetPasswordTokenHash: tokenHash, resetPasswordExpiresAt: expiresAt },

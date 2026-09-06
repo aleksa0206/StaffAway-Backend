@@ -25,7 +25,10 @@ export async function loginHandler(req: Request, res: Response, next: NextFuncti
 export async function verifyTwoFactorLoginHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const { tempToken, code } = req.body;
-    const { accessToken, refreshToken, user } = await authService.verifyTwoFactorLogin(tempToken, code);
+    const { accessToken, refreshToken, user } = await authService.verifyTwoFactorLogin(
+      tempToken,
+      code
+    );
     res.cookie(REFRESH_COOKIE_NAME, refreshToken, REFRESH_COOKIE_OPTIONS);
     res.json({ token: accessToken, user });
   } catch (err) {

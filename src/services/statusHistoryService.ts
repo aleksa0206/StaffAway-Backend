@@ -2,8 +2,11 @@ import * as statusHistoryRepository from '../repositories/statusHistoryRepositor
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 
-export async function getAllStatusHistories(companyId: number) {
-  return await statusHistoryRepository.findAllStatusHistories(companyId);
+export async function getAllStatusHistories(
+  companyId: number,
+  pagination: { skip: number; take: number }
+) {
+  return await statusHistoryRepository.findAllStatusHistories(companyId, pagination);
 }
 
 export async function getStatusHistoryById(statusHistoryId: number, companyId: number) {

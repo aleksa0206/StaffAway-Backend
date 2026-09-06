@@ -1,10 +1,15 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as workScheduleService from '../services/workScheduleService';
+import { buildPaginationMeta, parsePagination } from '../utils/pagination';
 
 export async function getAllWorkSchedulesHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const workSchedules = await workScheduleService.getAllWorkSchedules(req.user!.companyId);
-    res.json(workSchedules);
+    const pagination = parsePagination(req);
+    const { data, total } = await workScheduleService.getAllWorkSchedules(
+      req.user!.companyId,
+      pagination
+    );
+    res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });
   } catch (err) {
     next(err);
   }
@@ -13,7 +18,10 @@ export async function getAllWorkSchedulesHandler(req: Request, res: Response, ne
 export async function getWorkScheduleByIdHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const workScheduleId = Number(req.params.workScheduleId);
-    const workSchedule = await workScheduleService.getWorkScheduleById(workScheduleId, req.user!.companyId);
+    const workSchedule = await workScheduleService.getWorkScheduleById(
+      workScheduleId,
+      req.user!.companyId
+    );
     res.json(workSchedule);
   } catch (err) {
     next(err);
@@ -53,7 +61,10 @@ export async function updateWorkScheduleHandler(req: Request, res: Response, nex
 export async function deleteWorkScheduleHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const workScheduleId = Number(req.params.workScheduleId);
-    const workSchedule = await workScheduleService.deleteWorkSchedule(workScheduleId, req.user!.companyId);
+    const workSchedule = await workScheduleService.deleteWorkSchedule(
+      workScheduleId,
+      req.user!.companyId
+    );
     res.json(workSchedule);
   } catch (err) {
     next(err);

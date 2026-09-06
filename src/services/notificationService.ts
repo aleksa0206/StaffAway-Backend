@@ -1,9 +1,12 @@
-import * as notificationRepository from "../repositories/notificationRepository";
+import * as notificationRepository from '../repositories/notificationRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 
-export async function getAllNotifications(userId: number) {
-  return await notificationRepository.findAllNotifications(userId);
+export async function getAllNotifications(
+  userId: number,
+  pagination: { skip: number; take: number }
+) {
+  return await notificationRepository.findAllNotifications(userId, pagination);
 }
 
 export async function getNotificationById(notificationId: number, userId: number) {
@@ -19,7 +22,7 @@ export async function createNotification(data: {
   userId: number;
   message: string;
   isRead: boolean;
-  type: "LeaveRequestSubmitted" | "LeaveRequestApproved" | "LeaveRequestRejected" | "General";
+  type: 'LeaveRequestSubmitted' | 'LeaveRequestApproved' | 'LeaveRequestRejected' | 'General';
 }) {
   return await notificationRepository.createNotification(data);
 }
@@ -30,7 +33,7 @@ export async function updateNotification(
   data: {
     message?: string;
     isRead?: boolean;
-    type?: "LeaveRequestSubmitted" | "LeaveRequestApproved" | "LeaveRequestRejected" | "General";
+    type?: 'LeaveRequestSubmitted' | 'LeaveRequestApproved' | 'LeaveRequestRejected' | 'General';
   }
 ) {
   const notification = await notificationRepository.findNotificationById(notificationId);

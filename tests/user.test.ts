@@ -31,18 +31,15 @@ describe('User', () => {
     const { user } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
 
-    const res = await request(app)
-      .post('/users')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        firstName: 'Novi',
-        lastName: 'Zaposleni',
-        email: 'novi@test.com',
-        password: 'password123',
-        role: 'Employee',
-        managerId: null,
-        hireDate: '2026-01-01',
-      });
+    const res = await request(app).post('/users').set('Authorization', `Bearer ${token}`).send({
+      firstName: 'Novi',
+      lastName: 'Zaposleni',
+      email: 'novi@test.com',
+      password: 'password123',
+      role: 'Employee',
+      managerId: null,
+      hireDate: '2026-01-01',
+    });
 
     expect(res.status).toBe(403);
   });
@@ -79,7 +76,9 @@ describe('User', () => {
     const { user } = await createTestUser({ companyId: company.id, role: 'Hr' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
 
-    const res = await request(app).delete(`/users/${user.id}`).set('Authorization', `Bearer ${token}`);
+    const res = await request(app)
+      .delete(`/users/${user.id}`)
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(403);
   });
@@ -90,7 +89,9 @@ describe('User', () => {
     const { user: employee } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const token = tokenFor({ id: hr.id, role: hr.role, companyId: company.id });
 
-    const res = await request(app).delete(`/users/${employee.id}`).set('Authorization', `Bearer ${token}`);
+    const res = await request(app)
+      .delete(`/users/${employee.id}`)
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
   });

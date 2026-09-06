@@ -1,4 +1,4 @@
-import * as companySettingsRepository from "../repositories/companySettingsRepository";
+import * as companySettingsRepository from '../repositories/companySettingsRepository';
 
 export async function getCompanySettings(companyId: number) {
   return await companySettingsRepository.findCompanySettingsByCompanyId(companyId);

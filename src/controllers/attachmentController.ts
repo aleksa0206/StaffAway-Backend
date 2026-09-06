@@ -1,15 +1,19 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as attachmentService from '../services/attachmentService';
+import { buildPaginationMeta, parsePagination } from '../utils/pagination';
 
 export async function getAllAttachmentsHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const attachments = await attachmentService.getAllAttachments(req.user!.companyId);
-    res.json(attachments);
+    const pagination = parsePagination(req);
+    const { data, total } = await attachmentService.getAllAttachments(
+      req.user!.companyId,
+      pagination
+    );
+    res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });
   } catch (err) {
     next(err);
   }
 }
-
 export async function getAttachmentByIdHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const attachmentId = Number(req.params.attachmentId);

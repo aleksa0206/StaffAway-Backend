@@ -2,8 +2,11 @@ import * as auditLogRepository from '../repositories/auditLogRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 
-export async function getAllAuditLogs(companyId: number) {
-  return await auditLogRepository.findAllAuditLogs(companyId);
+export async function getAllAuditLogs(
+  companyId: number,
+  pagination: { skip: number; take: number }
+) {
+  return await auditLogRepository.findAllAuditLogs(companyId, pagination);
 }
 
 export async function getAuditLogById(auditLogId: number, companyId: number) {
