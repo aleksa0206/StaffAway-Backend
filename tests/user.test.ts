@@ -21,9 +21,9 @@ describe('User', () => {
     const res = await request(app).get('/users').set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    for (const u of res.body) {
-      expect(u.passwordHash).toBeUndefined();
-    }
+  for (const u of res.body.data) {
+  expect(u.passwordHash).toBeUndefined();
+}
   });
 
   it('POST /users vraca 403 ako nije Hr', async () => {

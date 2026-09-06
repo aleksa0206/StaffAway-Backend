@@ -164,7 +164,7 @@ describe('LeaveRequest poslovna logika', () => {
       .get('/leave-balances')
       .set('Authorization', `Bearer ${employeeToken}`);
 
-    const balance = balanceRes.body.find((b: any) => b.leaveTypeId === leaveType.id);
+const balance = balanceRes.body.data.find((b: any) => b.leaveTypeId === leaveType.id);
     expect(balance.usedDays).toBe(5);
   });
 

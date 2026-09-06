@@ -39,6 +39,8 @@ enum LeaveStatus {
   Rejected
 }
 
+
+
 enum NotificationType {
   LeaveRequestSubmitted
   LeaveRequestApproved
@@ -82,6 +84,15 @@ model User {
   workSchedule      WorkSchedule?
 
   @@unique([companyId, email])
+}
+
+model RateLimitEntry {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  count     Int      @default(1)
+  expiresAt DateTime
+
+  @@index([expiresAt])
 }
 
 model LeaveType {

@@ -23,7 +23,7 @@ import statusHistoryRoutes from './routes/statusHistoryRoutes';
 import userRoutes from './routes/userRoutes';
 import workScheduleRoutes from './routes/workScheduleRoutes';
 import { errorMiddleware } from './middleware/errorMiddleware';
-import { generalRateLimiter } from './middleware/rateLimit';
+import { generalDbRateLimiter } from './middleware/dbRateLimiter';
 import type {} from './types/express';
 
 const app = express();
@@ -37,7 +37,7 @@ app.use(
 app.use(pinoHttp({ logger }));
 app.use(express.json());
 app.use(cookieParser());
-app.use(generalRateLimiter);
+app.use(generalDbRateLimiter);
 app.use(healthRoutes);
 app.use(userRoutes);
 app.use(departmentRoutes);
