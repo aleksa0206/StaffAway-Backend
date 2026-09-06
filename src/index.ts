@@ -4,11 +4,6 @@ import { prisma } from './config/prismaClient';
 
 const port = process.env.PORT;
 
-app.listen(port, () => {
-  console.log(`server radi na portu ${port}`);
-});
-
-
 const server = app.listen(port, () => {
   logger.info(`server radi na portu ${port}`);
 });
@@ -21,5 +16,12 @@ async function shutdown(signal: string) {
     logger.info('Prisma konekcija zatvorena.');
     process.exit(0);
   });
-  // ... ostatak nepromenjen
+
+  setTimeout(() => {
+    logger.error('Prinudno gasenje - timeout istekao.');
+    process.exit(1);
+  }, 10000);
 }
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

@@ -1,6 +1,7 @@
 import * as workScheduleRepository from '../repositories/workScheduleRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
+import * as userRepository from '../repositories/userRepository';
 
 export async function getAllWorkSchedules(companyId: number) {
   return await workScheduleRepository.findAllWorkSchedules(companyId);
@@ -14,13 +15,20 @@ export async function getWorkScheduleById(workScheduleId: number, companyId: num
 
   return workSchedule;
 }
-
 export async function createWorkSchedule(data: {
   userId: number;
   companyId: number;
   hoursPerWeek: number;
   isPartTime: boolean;
 }) {
+  const targetUser = await userRepository.findById(data.userId);
+  if (!targetUser) {
+    throw new NotFoundError('User');
+  }
+  if (targetUser.companyId !== data.companyId) {
+    throw new ForbiddenError('Cannot create work schedule for a user outside your company');
+  }
+
   return await workScheduleRepository.createWorkSchedule(data);
 }
 

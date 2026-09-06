@@ -1,5 +1,8 @@
 import { User } from "@prisma/client";
 import { prisma } from "../config/prismaClient";
+import { Prisma } from '@prisma/client';
+
+type PrismaClientOrTx = typeof prisma | Prisma.TransactionClient;
 
 const userSafeSelect = {
   id: true,
@@ -29,17 +32,20 @@ export async function findById(userId: number) {
   });
 }
 
-export async function create(data: {
-  firstName: string;
-  lastName: string;
-  email: string;
-  passwordHash: string;
-  role: "Employee" | "Manager" | "Hr";
-  managerId: number | null;
-  hireDate: Date;
-  companyId: number;
-}) {
-  return await prisma.user.create({ data, select: userSafeSelect });
+export async function create(
+  data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    passwordHash: string;
+    role: 'Employee' | 'Manager' | 'Hr';
+    managerId: number | null;
+    hireDate: Date;
+    companyId: number;
+  },
+  client: PrismaClientOrTx = prisma
+) {
+  return await client.user.create({ data, select: userSafeSelect });
 }
 
 export async function update(

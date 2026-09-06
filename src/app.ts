@@ -1,6 +1,9 @@
 import 'dotenv/config';
 import express from 'express';
+import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import pinoHttp from 'pino-http';
+import { logger } from './config/logger';
 import apiKeyRoutes from './routes/apiKeyRoutes';
 import attachmentRoutes from './routes/attachmentRoutes';
 import auditLogRoutes from './routes/auditLogRoutes';
@@ -21,12 +24,15 @@ import userRoutes from './routes/userRoutes';
 import workScheduleRoutes from './routes/workScheduleRoutes';
 import { errorMiddleware } from './middleware/errorMiddleware';
 import { generalRateLimiter } from './middleware/rateLimit';
-import pinoHttp from 'pino-http';
-import { logger } from './config/logger';
 import type {} from './types/express';
 
 const app = express();
 
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
+}));
+app.use(pinoHttp({ logger }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(generalRateLimiter);
@@ -48,7 +54,6 @@ app.use(leaveBalanceRoutes);
 app.use(companySettingsRoutes);
 app.use(apiKeyRoutes);
 app.use(authRoutes);
-app.use(pinoHttp({ logger }));
 app.use(errorMiddleware);
 
 export default app;

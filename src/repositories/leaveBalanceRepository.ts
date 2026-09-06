@@ -27,16 +27,18 @@ export async function findAllLeaveBalances(
 ): Promise<LeaveBalance[]> {
   return await prisma.leaveBalance.findMany({ where: { companyId } });
 }
-
-export async function createLeaveBalance(data: {
-  userId: number;
-  leaveTypeId: number;
-  companyId: number;
-  year: number;
-  totalDays: number;
-  usedDays: number;
-}): Promise<LeaveBalance> {
-  return await prisma.leaveBalance.create({ data });
+export async function createLeaveBalance(
+  data: {
+    userId: number;
+    leaveTypeId: number;
+    companyId: number;
+    year: number;
+    totalDays: number;
+    usedDays: number;
+  },
+  client: PrismaClientOrTx = prisma
+) {
+  return await client.leaveBalance.create({ data });
 }
 
 export async function removeLeaveBalance(
