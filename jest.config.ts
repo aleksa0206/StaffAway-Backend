@@ -6,6 +6,7 @@ const config: Config = {
   setupFiles: ['dotenv/config'],
   testMatch: ['**/*.test.ts'],
   testTimeout: 15000,
+  globalSetup: '<rootDir>/tests/globalSetup.ts',
   moduleNameMapper: {
     '^otplib$': '<rootDir>/tests/__mocks__/otplib.ts',
   },

@@ -2,6 +2,7 @@ import * as attachmentRepository from '../repositories/attachmentRepository';
 import * as leaveRequestRepository from '../repositories/leaveRequestRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
+import * as fileStorageService from './fileStorageService';
 
 export async function getAllAttachments(
   companyId: number,
@@ -24,7 +25,7 @@ export async function getAttachmentById(attachmentId: number, companyId: number)
 }
 
 export async function createAttachment(
-  data: { leaveRequestId: number; fileName: string; filePath: string },
+  data: { leaveRequestId: number; fileBuffer: Buffer; originalFileName: string; mimeType: string },
   companyId: number
 ) {
   const leaveRequest = await leaveRequestRepository.findLeaveRequestById(data.leaveRequestId);
@@ -36,7 +37,13 @@ export async function createAttachment(
     throw new ForbiddenError('Cannot attach file to a leave request outside your company');
   }
 
-  return await attachmentRepository.createAttachment(data);
+  const key = await fileStorageService.uploadFile(data.fileBuffer, data.originalFileName, data.mimeType);
+
+  return await attachmentRepository.createAttachment({
+    leaveRequestId: data.leaveRequestId,
+    fileName: data.originalFileName,
+    filePath: key,
+  });
 }
 
 export async function deleteAttachment(attachmentId: number, companyId: number) {
@@ -49,5 +56,13 @@ export async function deleteAttachment(attachmentId: number, companyId: number) 
     throw new ForbiddenError();
   }
 
+  await fileStorageService.deleteFile(attachment.filePath);
+
   return await attachmentRepository.removeAttachment(attachmentId);
+}
+
+export async function toResponseShape(attachment: { fileName: string; filePath: string; [key: string]: unknown }) {
+  const { filePath, ...rest } = attachment;
+  const fileUrl = await fileStorageService.getSignedFileUrl(filePath);
+  return { ...rest, fileUrl };
 }

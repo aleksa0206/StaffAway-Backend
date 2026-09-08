@@ -12,6 +12,8 @@ import {
 } from '../controllers/authController';
 import { loginDbRateLimiter } from '../middleware/dbRateLimiter';
 import { authMiddleware } from '../middleware/authMiddleware';
+
+
 const router = Router();
 router.post('/auth/login', loginDbRateLimiter, loginHandler);
 router.post('/auth/2fa/verify-login', loginDbRateLimiter, verifyTwoFactorLoginHandler);

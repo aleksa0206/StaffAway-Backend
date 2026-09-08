@@ -1,6 +1,7 @@
 ﻿import { prisma } from '../../src/config/prismaClient';
 
 export async function cleanDatabase() {
+  await prisma.rateLimitEntry.deleteMany();
   await prisma.attachment.deleteMany();
   await prisma.comment.deleteMany();
   await prisma.statusHistory.deleteMany();
