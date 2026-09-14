@@ -4,8 +4,13 @@ node_modules/
 /src/generated/prisma
 .agents
 .claude
+PROJECT_CONTEXT.md
+StaffAway-Backend-clean.zip
 .windsurf
 dist/
+CLAUDE.md
+.claudeignore
+
 
 
 .env.test

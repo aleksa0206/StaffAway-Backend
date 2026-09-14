@@ -55,7 +55,10 @@ describe('Attachment', () => {
       .post('/attachments')
       .set('Authorization', `Bearer ${tokenB}`)
       .field('leaveRequestId', leaveRequest.id)
-      .attach('file', Buffer.from('test pdf content'), { filename: 'test.pdf', contentType: 'application/pdf' });
+      .attach('file', Buffer.from('test pdf content'), {
+        filename: 'test.pdf',
+        contentType: 'application/pdf',
+      });
 
     expect(res.status).toBe(403);
   });

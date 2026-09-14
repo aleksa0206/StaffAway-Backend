@@ -13,8 +13,8 @@ import { requireRole } from '../middleware/requireRole';
 
 const router = Router();
 
-router.get('/api-keys', authMiddleware, getAllApiKeysHandler);
-router.get('/api-keys/:apiKeyId', authMiddleware, getApiKeyByIdHandler);
+router.get('/api-keys', authMiddleware, requireRole('Hr'), getAllApiKeysHandler);
+router.get('/api-keys/:apiKeyId', authMiddleware, requireRole('Hr'), getApiKeyByIdHandler);
 router.post(
   '/api-keys',
   authMiddleware,

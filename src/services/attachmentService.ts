@@ -2,22 +2,38 @@ import * as attachmentRepository from '../repositories/attachmentRepository';
 import * as leaveRequestRepository from '../repositories/leaveRequestRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
-import * as fileStorageService from './fileStorageService';
+import { getContainer } from '../container';
 
-export async function getAllAttachments(
-  companyId: number,
-  pagination: { skip: number; take: number }
-) {
-  return await attachmentRepository.findAllAttachmentsByCompany(companyId, pagination);
+type RequestingUser = { companyId: number; userId: number; role: string };
+
+function isPrivileged(role: string) {
+  return role === 'Manager' || role === 'Hr';
 }
 
-export async function getAttachmentById(attachmentId: number, companyId: number) {
+export async function getAllAttachments(
+  requestingUser: RequestingUser,
+  pagination: { skip: number; take: number }
+) {
+  return await attachmentRepository.findAllAttachmentsByCompany(
+    requestingUser.companyId,
+    pagination,
+    isPrivileged(requestingUser.role) ? undefined : requestingUser.userId
+  );
+}
+
+export async function getAttachmentById(attachmentId: number, requestingUser: RequestingUser) {
   const attachment = await attachmentRepository.findAttachmentById(attachmentId);
 
   if (!attachment) {
     throw new NotFoundError('Attachment');
   }
-  if (attachment.leaveRequest?.companyId !== companyId) {
+  if (attachment.leaveRequest?.companyId !== requestingUser.companyId) {
+    throw new ForbiddenError();
+  }
+  if (
+    !isPrivileged(requestingUser.role) &&
+    attachment.leaveRequest?.userId !== requestingUser.userId
+  ) {
     throw new ForbiddenError();
   }
 
@@ -28,6 +44,8 @@ export async function createAttachment(
   data: { leaveRequestId: number; fileBuffer: Buffer; originalFileName: string; mimeType: string },
   companyId: number
 ) {
+  const { fileStorage } = getContainer();
+
   const leaveRequest = await leaveRequestRepository.findLeaveRequestById(data.leaveRequestId);
 
   if (!leaveRequest) {
@@ -37,7 +55,7 @@ export async function createAttachment(
     throw new ForbiddenError('Cannot attach file to a leave request outside your company');
   }
 
-  const key = await fileStorageService.uploadFile(data.fileBuffer, data.originalFileName, data.mimeType);
+  const key = await fileStorage.uploadFile(data.fileBuffer, data.originalFileName, data.mimeType);
 
   return await attachmentRepository.createAttachment({
     leaveRequestId: data.leaveRequestId,
@@ -46,23 +64,36 @@ export async function createAttachment(
   });
 }
 
-export async function deleteAttachment(attachmentId: number, companyId: number) {
+export async function deleteAttachment(attachmentId: number, requestingUser: RequestingUser) {
+  const { fileStorage } = getContainer();
+
   const attachment = await attachmentRepository.findAttachmentById(attachmentId);
 
   if (!attachment) {
     throw new NotFoundError('Attachment');
   }
-  if (attachment.leaveRequest?.companyId !== companyId) {
+  if (attachment.leaveRequest?.companyId !== requestingUser.companyId) {
+    throw new ForbiddenError();
+  }
+  if (
+    !isPrivileged(requestingUser.role) &&
+    attachment.leaveRequest?.userId !== requestingUser.userId
+  ) {
     throw new ForbiddenError();
   }
 
-  await fileStorageService.deleteFile(attachment.filePath);
+  await fileStorage.deleteFile(attachment.filePath);
 
   return await attachmentRepository.removeAttachment(attachmentId);
 }
 
-export async function toResponseShape(attachment: { fileName: string; filePath: string; [key: string]: unknown }) {
+export async function toResponseShape(attachment: {
+  fileName: string;
+  filePath: string;
+  [key: string]: unknown;
+}) {
+  const { fileStorage } = getContainer();
   const { filePath, ...rest } = attachment;
-  const fileUrl = await fileStorageService.getSignedFileUrl(filePath);
+  const fileUrl = await fileStorage.getSignedFileUrl(filePath);
   return { ...rest, fileUrl };
 }

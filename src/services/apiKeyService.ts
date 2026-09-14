@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import * as apiKeyRepository from '../repositories/apiKeyRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
@@ -15,8 +16,9 @@ export async function getApiKeyById(apiKeyId: number, companyId: number) {
   return apiKey;
 }
 
-export async function createApiKey(data: { key: string; name: string; companyId: number }) {
-  return await apiKeyRepository.createApiKey(data);
+export async function createApiKey(data: { name: string; companyId: number }) {
+  const key = crypto.randomBytes(32).toString('hex');
+  return await apiKeyRepository.createApiKey({ key, name: data.name, companyId: data.companyId });
 }
 
 export async function revokeApiKey(apiKeyId: number, companyId: number) {

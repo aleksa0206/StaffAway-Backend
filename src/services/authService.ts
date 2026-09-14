@@ -9,6 +9,7 @@ import { UnauthorizedError } from '../errors/UnauthorizedError';
 import { LockedError } from '../errors/LockedError';
 import { TwoFactorRequiredError } from '../errors/TwoFactorRequiredError';
 import { sendPasswordResetEmail } from './emailService';
+import { logger } from '../config/logger';
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
@@ -59,10 +60,14 @@ async function issueTokensForUser(user: { id: number; role: string; companyId: n
   return { accessToken, refreshToken };
 }
 
+const DUMMY_PASSWORD_HASH = '$2b$10$C6UzMDM.H6dfI/f/IKcEeO5cLDl6h.HOOrGqW9dR1MXwLXVWfHbf.';
+
 export async function login(email: string, password: string) {
   const user = await userRepository.findUserByEmail(email);
 
   if (!user) {
+    await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
+    logger.warn({ email }, 'Login attempt for unknown email');
     throw new UnauthorizedError('Invalid email or password');
   }
 
@@ -77,12 +82,14 @@ export async function login(email: string, password: string) {
 
     if (attemptsAfterThis >= MAX_FAILED_LOGIN_ATTEMPTS) {
       await userRepository.setAccountLock(user.id, new Date(Date.now() + LOCKOUT_DURATION_MS), 0);
+      logger.warn({ userId: user.id }, 'Account locked after too many failed login attempts');
       throw new LockedError(
         'Account locked due to too many failed login attempts. Try again in 15 minutes.'
       );
     }
 
     await userRepository.incrementFailedLoginAttempts(user.id);
+    logger.warn({ userId: user.id, attempt: attemptsAfterThis }, 'Failed login attempt');
     throw new UnauthorizedError('Invalid email or password');
   }
 
@@ -96,16 +103,17 @@ export async function login(email: string, password: string) {
   }
 
   const { accessToken, refreshToken } = await issueTokensForUser(user);
-  const { passwordHash, twoFactorSecret, ...safeUser } = user;
 
-  return { accessToken, refreshToken, user: safeUser };
+  return { accessToken, refreshToken, user: userRepository.toSafeUser(user) };
 }
 
 export async function verifyTwoFactorLogin(tempToken: string, code: string) {
   let payload: { userId: number; purpose: string };
 
   try {
-    payload = jwt.verify(tempToken, process.env.JWT_SECRET as string) as typeof payload;
+    payload = jwt.verify(tempToken, process.env.JWT_SECRET as string, {
+      algorithms: ['HS256'],
+    }) as typeof payload;
   } catch {
     throw new UnauthorizedError('Invalid or expired temporary token');
   }
@@ -125,9 +133,8 @@ export async function verifyTwoFactorLogin(tempToken: string, code: string) {
   }
 
   const { accessToken, refreshToken } = await issueTokensForUser(user);
-  const { passwordHash, twoFactorSecret, ...safeUser } = user;
 
-  return { accessToken, refreshToken, user: safeUser };
+  return { accessToken, refreshToken, user: userRepository.toSafeUser(user) };
 }
 
 export async function setupTwoFactor(userId: number) {
@@ -158,7 +165,17 @@ export async function confirmTwoFactor(userId: number, code: string) {
 
   await userRepository.enableTwoFactor(userId);
 }
-export async function disableTwoFactor(userId: number) {
+export async function disableTwoFactor(userId: number, code: string) {
+  const user = await userRepository.findByIdWithAuthFields(userId);
+  if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
+    throw new UnauthorizedError('Two-factor authentication is not enabled for this account');
+  }
+
+  const result = await totp.verify(code, { secret: user.twoFactorSecret });
+  if (!result.valid) {
+    throw new UnauthorizedError('Invalid two-factor code');
+  }
+
   await userRepository.disableTwoFactor(userId);
 }
 
@@ -170,7 +187,10 @@ export async function refresh(oldRefreshToken: string) {
     throw new UnauthorizedError('Invalid or expired refresh token');
   }
 
-  await refreshTokenRepository.revokeRefreshToken(existing.id);
+  const rotated = await refreshTokenRepository.revokeRefreshTokenIfActive(existing.id);
+  if (!rotated) {
+    throw new UnauthorizedError('Invalid or expired refresh token');
+  }
 
   const user = await userRepository.findById(existing.userId);
   if (!user) {

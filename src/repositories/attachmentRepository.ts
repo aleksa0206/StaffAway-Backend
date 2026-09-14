@@ -3,9 +3,12 @@ import { prisma } from '../config/prismaClient';
 
 export async function findAllAttachmentsByCompany(
   companyId: number,
-  pagination: { skip: number; take: number }
+  pagination: { skip: number; take: number },
+  ownerUserId?: number
 ) {
-  const where = { leaveRequest: { companyId } };
+  const where = ownerUserId
+    ? { leaveRequest: { companyId, userId: ownerUserId } }
+    : { leaveRequest: { companyId } };
   const [data, total] = await Promise.all([
     prisma.attachment.findMany({ where, skip: pagination.skip, take: pagination.take }),
     prisma.attachment.count({ where }),
@@ -16,7 +19,7 @@ export async function findAllAttachmentsByCompany(
 export async function findAttachmentById(attachmentId: number) {
   return await prisma.attachment.findUnique({
     where: { id: attachmentId },
-    include: { leaveRequest: { select: { companyId: true } } },
+    include: { leaveRequest: { select: { companyId: true, userId: true } } },
   });
 }
 

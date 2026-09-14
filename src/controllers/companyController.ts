@@ -5,7 +5,11 @@ import { buildPaginationMeta, parsePagination } from '../utils/pagination';
 export async function getAllCompaniesHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const pagination = parsePagination(req);
-    const { data, total } = await companyService.getAllCompanies(req.user!.companyId, pagination);
+    const { data, total } = await companyService.getAllCompanies(
+      req.user!.companyId,
+      req.user!.role,
+      pagination
+    );
     res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });
   } catch (err) {
     next(err);
@@ -24,7 +28,11 @@ export async function getMyCompanyHandler(req: Request, res: Response, next: Nex
 export async function createCompanyHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const { name } = req.body;
-    const company = await companyService.createCompany({ name }, req.user!.companyId);
+    const company = await companyService.createCompany(
+      { name },
+      req.user!.companyId,
+      req.user!.role
+    );
     res.status(201).json(company);
   } catch (err) {
     next(err);

@@ -191,22 +191,6 @@ export async function createTestNotification(params: {
   });
 }
 
-export async function createTestRefreshToken(params: {
-  userId: number;
-  token?: string;
-  expiresAt?: Date;
-  revoked?: boolean;
-}) {
-  return await prisma.refreshToken.create({
-    data: {
-      userId: params.userId,
-      token: params.token ?? `token-${Date.now()}-${Math.random()}`,
-      expiresAt: params.expiresAt ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      revoked: params.revoked ?? false,
-    },
-  });
-}
-
 export async function createTestStatusHistory(params: {
   leaveRequestId: number;
   changedById: number;

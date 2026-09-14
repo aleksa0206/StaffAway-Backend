@@ -1,4 +1,3 @@
-
 import { Router } from 'express';
 import { healthHandler } from '../controllers/healthController';
 

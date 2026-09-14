@@ -28,21 +28,6 @@ export async function getNotificationByIdHandler(req: Request, res: Response, ne
   }
 }
 
-export async function createNotificationHandler(req: Request, res: Response, next: NextFunction) {
-  try {
-    const { userId, message, isRead, type } = req.body;
-    const notification = await notificationService.createNotification({
-      userId,
-      message,
-      isRead,
-      type,
-    });
-    res.status(201).json(notification);
-  } catch (err) {
-    next(err);
-  }
-}
-
 export async function updateNotificationHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const notificationId = Number(req.params.notificationId);

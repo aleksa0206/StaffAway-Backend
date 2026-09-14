@@ -57,7 +57,8 @@ export async function confirmTwoFactorHandler(req: Request, res: Response, next:
 
 export async function disableTwoFactorHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    await authService.disableTwoFactor(req.user!.userId);
+    const { code } = req.body;
+    await authService.disableTwoFactor(req.user!.userId, code);
     res.status(204).send();
   } catch (err) {
     next(err);

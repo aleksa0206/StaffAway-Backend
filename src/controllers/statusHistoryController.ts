@@ -31,19 +31,3 @@ export async function getStatusHistoryByIdHandler(req: Request, res: Response, n
     next(err);
   }
 }
-
-export async function createStatusHistoryHandler(req: Request, res: Response, next: NextFunction) {
-  try {
-    const { leaveRequestId, oldStatus, newStatus } = req.body;
-    const statusHistory = await statusHistoryService.createStatusHistory({
-      leaveRequestId,
-      changedById: req.user!.userId,
-      companyId: req.user!.companyId,
-      oldStatus,
-      newStatus,
-    });
-    res.status(201).json(statusHistory);
-  } catch (err) {
-    next(err);
-  }
-}

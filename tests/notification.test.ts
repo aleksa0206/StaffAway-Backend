@@ -72,7 +72,10 @@ describe('Notification', () => {
       .get('/notifications')
       .set('Authorization', `Bearer ${employeeToken}`);
 
-expect(notificationsRes.body.data.some((n: any) => n.type === 'LeaveRequestApproved')).toBe(true);  });
+    expect(notificationsRes.body.data.some((n: any) => n.type === 'LeaveRequestApproved')).toBe(
+      true
+    );
+  });
 
   it('automatski se kreira notifikacija kad Manager odbije LeaveRequest', async () => {
     const company = await createTestCompany();
@@ -101,5 +104,8 @@ expect(notificationsRes.body.data.some((n: any) => n.type === 'LeaveRequestAppro
       .get('/notifications')
       .set('Authorization', `Bearer ${employeeToken}`);
 
-expect(notificationsRes.body.data.some((n: any) => n.type === 'LeaveRequestRejected')).toBe(true);  });
+    expect(notificationsRes.body.data.some((n: any) => n.type === 'LeaveRequestRejected')).toBe(
+      true
+    );
+  });
 });

@@ -40,7 +40,13 @@ export async function updateCommentHandler(req: Request, res: Response, next: Ne
   try {
     const commentId = Number(req.params.commentId);
     const { text } = req.body;
-    const comment = await commentService.updateComment(commentId, req.user!.companyId, { text });
+    const comment = await commentService.updateComment(
+      commentId,
+      req.user!.companyId,
+      req.user!.userId,
+      req.user!.role,
+      { text }
+    );
     res.json(comment);
   } catch (err) {
     next(err);
@@ -50,7 +56,12 @@ export async function updateCommentHandler(req: Request, res: Response, next: Ne
 export async function deleteCommentHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const commentId = Number(req.params.commentId);
-    const comment = await commentService.deleteComment(commentId, req.user!.companyId);
+    const comment = await commentService.deleteComment(
+      commentId,
+      req.user!.companyId,
+      req.user!.userId,
+      req.user!.role
+    );
     res.json(comment);
   } catch (err) {
     next(err);

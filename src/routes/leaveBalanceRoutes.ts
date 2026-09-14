@@ -7,6 +7,7 @@ import {
   deleteLeaveBalanceHandler,
 } from '../controllers/leaveBalanceController';
 import { authMiddleware } from '../middleware/authMiddleware';
+import { requireRole } from '../middleware/requireRole';
 import { validate } from '../middleware/validate';
 import {
   createLeaveBalanceSchema,
@@ -20,15 +21,22 @@ router.get('/leave-balances/:leaveBalanceId', authMiddleware, getLeaveBalanceByI
 router.post(
   '/leave-balances',
   authMiddleware,
+  requireRole('Hr'),
   validate(createLeaveBalanceSchema),
   createLeaveBalanceHandler
 );
 router.put(
   '/leave-balances/:leaveBalanceId',
   authMiddleware,
+  requireRole('Hr'),
   validate(updateLeaveBalanceSchema),
   updateLeaveBalanceHandler
 );
-router.delete('/leave-balances/:leaveBalanceId', authMiddleware, deleteLeaveBalanceHandler);
+router.delete(
+  '/leave-balances/:leaveBalanceId',
+  authMiddleware,
+  requireRole('Hr'),
+  deleteLeaveBalanceHandler
+);
 
 export default router;

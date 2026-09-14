@@ -3,11 +3,13 @@ import * as attachmentService from '../services/attachmentService';
 import { buildPaginationMeta, parsePagination } from '../utils/pagination';
 import { upload } from '../middleware/upload';
 
-
 export async function getAllAttachmentsHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const pagination = parsePagination(req);
-    const { data, total } = await attachmentService.getAllAttachments(req.user!.companyId, pagination);
+    const { data, total } = await attachmentService.getAllAttachments(
+      { companyId: req.user!.companyId, userId: req.user!.userId, role: req.user!.role },
+      pagination
+    );
     const responseData = await Promise.all(data.map(attachmentService.toResponseShape));
     res.json({
       data: responseData,
@@ -20,7 +22,11 @@ export async function getAllAttachmentsHandler(req: Request, res: Response, next
 export async function getAttachmentByIdHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const attachmentId = Number(req.params.attachmentId);
-    const attachment = await attachmentService.getAttachmentById(attachmentId, req.user!.companyId);
+    const attachment = await attachmentService.getAttachmentById(attachmentId, {
+      companyId: req.user!.companyId,
+      userId: req.user!.userId,
+      role: req.user!.role,
+    });
     const responseShape = await attachmentService.toResponseShape(attachment);
     res.json(responseShape);
   } catch (err) {
@@ -57,7 +63,11 @@ export async function createAttachmentHandler(req: Request, res: Response, next:
 export async function deleteAttachmentHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const attachmentId = Number(req.params.attachmentId);
-    const attachment = await attachmentService.deleteAttachment(attachmentId, req.user!.companyId);
+    const attachment = await attachmentService.deleteAttachment(attachmentId, {
+      companyId: req.user!.companyId,
+      userId: req.user!.userId,
+      role: req.user!.role,
+    });
     res.json(attachment);
   } catch (err) {
     next(err);

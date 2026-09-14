@@ -1,7 +1,12 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as rateLimitRepository from '../repositories/rateLimitRepository';
 
-export function dbRateLimit(options: { name: string; windowMs: number; max: number; message: string }) {
+export function dbRateLimit(options: {
+  name: string;
+  windowMs: number;
+  max: number;
+  message: string;
+}) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const key = `${options.name}:${req.ip}:${req.path}`;

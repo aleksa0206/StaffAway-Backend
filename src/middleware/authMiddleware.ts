@@ -15,7 +15,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string, { algorithms: ['HS256'] });
     req.user = decoded as unknown as {
       userId: number;
       role: 'Employee' | 'Manager' | 'Hr';

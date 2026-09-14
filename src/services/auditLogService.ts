@@ -17,15 +17,3 @@ export async function getAuditLogById(auditLogId: number, companyId: number) {
 
   return auditLog;
 }
-
-export async function createAuditLog(data: {
-  entityType: string;
-  entityId: number;
-  action: string;
-  performedById: number;
-  companyId: number;
-  oldValue?: string;
-  newValue?: string;
-}) {
-  return await auditLogRepository.createAuditLog(data);
-}

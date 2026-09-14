@@ -18,15 +18,6 @@ export async function getNotificationById(notificationId: number, userId: number
   return notification;
 }
 
-export async function createNotification(data: {
-  userId: number;
-  message: string;
-  isRead: boolean;
-  type: 'LeaveRequestSubmitted' | 'LeaveRequestApproved' | 'LeaveRequestRejected' | 'General';
-}) {
-  return await notificationRepository.createNotification(data);
-}
-
 export async function updateNotification(
   notificationId: number,
   userId: number,

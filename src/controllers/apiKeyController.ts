@@ -24,8 +24,8 @@ export async function getApiKeyByIdHandler(req: Request, res: Response, next: Ne
 
 export async function createApiKeyHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const { key, name } = req.body;
-    const apiKey = await apiKeyService.createApiKey({ key, name, companyId: req.user!.companyId });
+    const { name } = req.body;
+    const apiKey = await apiKeyService.createApiKey({ name, companyId: req.user!.companyId });
     res.status(201).json(apiKey);
   } catch (err) {
     next(err);

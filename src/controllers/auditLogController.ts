@@ -21,21 +21,3 @@ export async function getAuditLogByIdHandler(req: Request, res: Response, next: 
     next(err);
   }
 }
-
-export async function createAuditLogHandler(req: Request, res: Response, next: NextFunction) {
-  try {
-    const { entityType, entityId, action, oldValue, newValue } = req.body;
-    const auditLog = await auditLogService.createAuditLog({
-      entityType,
-      entityId,
-      action,
-      performedById: req.user!.userId,
-      companyId: req.user!.companyId,
-      oldValue,
-      newValue,
-    });
-    res.status(201).json(auditLog);
-  } catch (err) {
-    next(err);
-  }
-}

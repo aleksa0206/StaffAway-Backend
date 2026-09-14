@@ -7,26 +7,39 @@ import * as notificationRepository from '../repositories/notificationRepository'
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 import { ConflictError } from '../errors/ConflictError';
+import { ValidationError } from '../errors/ValidationError';
 import { prisma } from '../config/prismaClient';
 import { Prisma } from '@prisma/client';
 
 type LeaveStatus = 'Pending' | 'Approval' | 'Rejected';
+type PrismaClientOrTx = typeof prisma | Prisma.TransactionClient;
 
 async function assertNoOverlap(
   userId: number,
   startDate: Date,
   endDate: Date,
-  excludeLeaveRequestId?: number
+  excludeLeaveRequestId?: number,
+  client: PrismaClientOrTx = prisma
 ) {
   const overlapping = await leaveRequestRepository.findOverlappingLeaveRequests(
     userId,
     startDate,
     endDate,
-    excludeLeaveRequestId
+    excludeLeaveRequestId,
+    client
   );
 
   if (overlapping.length > 0) {
     throw new ConflictError('Leave request overlaps with an existing request');
+  }
+}
+
+function assertTotalDaysWithinRange(startDate: Date, endDate: Date, totalDays: number) {
+  const daySpan = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  if (totalDays > daySpan) {
+    throw new ValidationError(
+      `totalDays (${totalDays}) cannot exceed the ${daySpan}-day span between startDate and endDate`
+    );
   }
 }
 
@@ -62,9 +75,8 @@ async function adjustLeaveBalanceOnStatusChange(
   }
 
   const delta = isApproved ? totalDays : -totalDays;
-  const newUsedDays = Math.max(0, balance.usedDays + delta);
 
-  await leaveBalanceRepository.updateLeaveBalance(balance.id, { usedDays: newUsedDays }, client);
+  await leaveBalanceRepository.incrementUsedDays(balance.id, delta, client);
 }
 
 export async function getAllLeaveRequests(
@@ -92,27 +104,37 @@ export async function updateLeaveRequest(
   if (!leaveRequest) throw new NotFoundError('LeaveRequest');
   if (leaveRequest.companyId !== companyId) throw new ForbiddenError();
 
+  const isOwner = leaveRequest.userId === changedById;
+  const isManagerOrHr = changedByRole === 'Manager' || changedByRole === 'Hr';
+  if (!isOwner && !isManagerOrHr) {
+    throw new ForbiddenError('You can only update your own leave requests');
+  }
+
   const effectiveStartDate = data.startDate ?? leaveRequest.startDate;
   const effectiveEndDate = data.endDate ?? leaveRequest.endDate;
   const effectiveTotalDays = data.totalDays ?? leaveRequest.totalDays;
 
-  if (data.startDate || data.endDate) {
-    await assertNoOverlap(
-      leaveRequest.userId,
-      effectiveStartDate,
-      effectiveEndDate,
-      leaveRequestId
-    );
-  }
+  assertTotalDaysWithinRange(effectiveStartDate, effectiveEndDate, effectiveTotalDays);
 
   const oldStatus = leaveRequest.status as LeaveStatus;
   const newStatus = data.status ?? oldStatus;
   const statusChanged = newStatus !== oldStatus;
 
-  if (statusChanged && changedByRole === 'Employee') {
+  if (changedByRole === 'Employee' && (statusChanged || data.approvedById !== undefined)) {
     throw new ForbiddenError('Only Manager or Hr can approve or reject leave requests');
   }
   return await prisma.$transaction(async (tx) => {
+    if (data.startDate || data.endDate) {
+      await leaveRequestRepository.lockUserForLeaveRequestWrite(leaveRequest.userId, tx);
+      await assertNoOverlap(
+        leaveRequest.userId,
+        effectiveStartDate,
+        effectiveEndDate,
+        leaveRequestId,
+        tx
+      );
+    }
+
     if (statusChanged) {
       await adjustLeaveBalanceOnStatusChange(
         tx,
@@ -180,19 +202,38 @@ export async function createLeaveRequest(data: {
   leaveTypeId: number;
   companyId: number;
 }) {
-  await assertMinimumNotice(data.companyId, data.startDate); // <- DODAJ OVU LINIJU
-  await assertNoOverlap(data.userId, data.startDate, data.endDate);
+  await assertMinimumNotice(data.companyId, data.startDate);
+  assertTotalDaysWithinRange(data.startDate, data.endDate, data.totalDays);
 
-  return await leaveRequestRepository.createLeaveRequest({
-    ...data,
-    status: 'Pending',
+  return await prisma.$transaction(async (tx) => {
+    await leaveRequestRepository.lockUserForLeaveRequestWrite(data.userId, tx);
+    await assertNoOverlap(data.userId, data.startDate, data.endDate, undefined, tx);
+
+    return await leaveRequestRepository.createLeaveRequest(
+      {
+        ...data,
+        status: 'Pending',
+      },
+      tx
+    );
   });
 }
 
-export async function deleteLeaveRequest(leaveRequestId: number, companyId: number) {
+export async function deleteLeaveRequest(
+  leaveRequestId: number,
+  companyId: number,
+  requestingUserId: number,
+  requestingUserRole: string
+) {
   const leaveRequest = await leaveRequestRepository.findLeaveRequestById(leaveRequestId);
   if (!leaveRequest) throw new NotFoundError('LeaveRequest');
   if (leaveRequest.companyId !== companyId) throw new ForbiddenError();
+
+  const isOwner = leaveRequest.userId === requestingUserId;
+  const isManagerOrHr = requestingUserRole === 'Manager' || requestingUserRole === 'Hr';
+  if (!isOwner && !isManagerOrHr) {
+    throw new ForbiddenError('You can only delete your own leave requests');
+  }
 
   return await leaveRequestRepository.removeLeaveRequest(leaveRequestId);
 }

@@ -56,7 +56,7 @@ model User {
   departmentId Int?
   firstName    String
   lastName     String
-  email        String
+  email        String   @unique
   passwordHash String
   twoFactorSecret  String?
   resetPasswordTokenHash String?
@@ -83,7 +83,7 @@ model User {
   comments          Comment[]
   workSchedule      WorkSchedule?
 
-  @@unique([companyId, email])
+  @@index([companyId])
 }
 
 model RateLimitEntry {

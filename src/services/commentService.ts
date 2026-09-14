@@ -25,20 +25,41 @@ export async function createComment(data: {
   return await commentRepository.createComment(data);
 }
 
+function assertCommentOwnerOrPrivileged(
+  comment: { authorId: number },
+  requestingUserId: number,
+  requestingUserRole: string
+) {
+  const isOwner = comment.authorId === requestingUserId;
+  const isManagerOrHr = requestingUserRole === 'Manager' || requestingUserRole === 'Hr';
+  if (!isOwner && !isManagerOrHr) {
+    throw new ForbiddenError('You can only modify your own comments');
+  }
+}
+
 export async function updateComment(
   commentId: number,
   companyId: number,
-  data: { leaveRequestId?: number; authorId?: number; text?: string }
+  requestingUserId: number,
+  requestingUserRole: string,
+  data: { text?: string }
 ) {
   const comment = await commentRepository.findCommentById(commentId);
   if (!comment) throw new NotFoundError('Comment');
   if (comment.companyId !== companyId) throw new ForbiddenError();
+  assertCommentOwnerOrPrivileged(comment, requestingUserId, requestingUserRole);
   return await commentRepository.updateComment(commentId, data);
 }
 
-export async function deleteComment(commentId: number, companyId: number) {
+export async function deleteComment(
+  commentId: number,
+  companyId: number,
+  requestingUserId: number,
+  requestingUserRole: string
+) {
   const comment = await commentRepository.findCommentById(commentId);
   if (!comment) throw new NotFoundError('Comment');
   if (comment.companyId !== companyId) throw new ForbiddenError();
+  assertCommentOwnerOrPrivileged(comment, requestingUserId, requestingUserRole);
   return await commentRepository.removeComment(commentId);
 }

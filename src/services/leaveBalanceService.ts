@@ -1,4 +1,5 @@
 import * as leaveBalanceRepository from '../repositories/leaveBalanceRepository';
+import * as userRepository from '../repositories/userRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 
@@ -24,6 +25,11 @@ export async function createLeaveBalance(data: {
   totalDays: number;
   usedDays: number;
 }) {
+  const user = await userRepository.findById(data.userId);
+  if (!user || user.companyId !== data.companyId) {
+    throw new ForbiddenError('User must belong to the same company');
+  }
+
   return await leaveBalanceRepository.createLeaveBalance(data);
 }
 

@@ -18,7 +18,6 @@ import leaveBalanceRoutes from './routes/leaveBalanceRoutes';
 import leaveRequestRoutes from './routes/leaveRequestRoutes';
 import leaveTypeRoutes from './routes/leaveTypeRoutes';
 import notificationRoutes from './routes/notificationRoutes';
-import refreshTokenRoutes from './routes/refreshTokenRoutes';
 import statusHistoryRoutes from './routes/statusHistoryRoutes';
 import userRoutes from './routes/userRoutes';
 import workScheduleRoutes from './routes/workScheduleRoutes';
@@ -34,7 +33,21 @@ app.use(
     credentials: true,
   })
 );
-app.use(pinoHttp({ logger }));
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  next();
+});
+app.use(
+  pinoHttp({
+    logger,
+    redact: {
+      paths: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
+      censor: '[Redacted]',
+    },
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 app.use(generalDbRateLimiter);
@@ -48,7 +61,6 @@ app.use(commentRoutes);
 app.use(workScheduleRoutes);
 app.use(notificationRoutes);
 app.use(auditLogRoutes);
-app.use(refreshTokenRoutes);
 app.use(attachmentRoutes);
 app.use(statusHistoryRoutes);
 app.use(leaveRequestRoutes);

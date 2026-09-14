@@ -81,7 +81,15 @@ export async function remove(userId: number) {
 }
 
 export async function findUserByEmail(email: string) {
-  return await prisma.user.findFirst({ where: { email } });
+  return await prisma.user.findUnique({ where: { email } });
+}
+
+export function toSafeUser(user: User): Pick<User, keyof typeof userSafeSelect> {
+  const keys = Object.keys(userSafeSelect) as (keyof typeof userSafeSelect)[];
+  return Object.fromEntries(keys.map((key) => [key, user[key]])) as Pick<
+    User,
+    keyof typeof userSafeSelect
+  >;
 }
 
 export async function incrementFailedLoginAttempts(userId: number) {

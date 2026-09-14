@@ -73,7 +73,10 @@ describe('2FA flow', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ code: '123456' });
 
-    await request(app).delete('/auth/2fa').set('Authorization', `Bearer ${accessToken}`);
+    await request(app)
+      .delete('/auth/2fa')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ code: '123456' });
 
     const afterDisableLoginRes = await request(app)
       .post('/auth/login')

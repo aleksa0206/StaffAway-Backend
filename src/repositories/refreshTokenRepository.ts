@@ -1,27 +1,6 @@
 import { RefreshToken } from '@prisma/client';
 import { prisma } from '../config/prismaClient';
 
-export async function findAllRefreshTokens(
-  userId: number,
-  pagination: { skip: number; take: number }
-) {
-  const [data, total] = await Promise.all([
-    prisma.refreshToken.findMany({
-      where: { userId },
-      skip: pagination.skip,
-      take: pagination.take,
-    }),
-    prisma.refreshToken.count({ where: { userId } }),
-  ]);
-  return { data, total };
-}
-
-export async function findRefreshTokenById(refreshTokenId: number): Promise<RefreshToken | null> {
-  return await prisma.refreshToken.findUnique({
-    where: { id: refreshTokenId },
-  });
-}
-
 export async function createRefreshToken(data: {
   userId: number;
   token: string;
@@ -37,8 +16,12 @@ export async function revokeRefreshToken(refreshTokenId: number): Promise<Refres
   });
 }
 
-export async function removeRefreshToken(refreshTokenId: number): Promise<RefreshToken> {
-  return await prisma.refreshToken.delete({ where: { id: refreshTokenId } });
+export async function revokeRefreshTokenIfActive(refreshTokenId: number): Promise<boolean> {
+  const result = await prisma.refreshToken.updateMany({
+    where: { id: refreshTokenId, revoked: false },
+    data: { revoked: true },
+  });
+  return result.count === 1;
 }
 
 export async function findRefreshTokenByTokenHash(tokenHash: string) {

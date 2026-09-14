@@ -49,6 +49,14 @@ export async function createLeaveBalance(
   return await client.leaveBalance.create({ data });
 }
 
+export async function incrementUsedDays(
+  leaveBalanceId: number,
+  delta: number,
+  client: PrismaClientOrTx = prisma
+): Promise<void> {
+  await client.$executeRaw`UPDATE LeaveBalance SET usedDays = GREATEST(0, usedDays + ${delta}) WHERE id = ${leaveBalanceId}`;
+}
+
 export async function removeLeaveBalance(leaveBalanceId: number): Promise<LeaveBalance> {
   return await prisma.leaveBalance.delete({ where: { id: leaveBalanceId } });
 }

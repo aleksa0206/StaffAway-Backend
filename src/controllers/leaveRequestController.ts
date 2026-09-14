@@ -69,7 +69,9 @@ export async function deleteLeaveRequestHandler(req: Request, res: Response, nex
     const leaveRequestId = Number(req.params.leaveRequestId);
     const leaveRequest = await leaveRequestService.deleteLeaveRequest(
       leaveRequestId,
-      req.user!.companyId
+      req.user!.companyId,
+      req.user!.userId,
+      req.user!.role
     );
     res.json(leaveRequest);
   } catch (err) {

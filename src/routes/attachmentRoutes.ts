@@ -21,12 +21,6 @@ router.post(
   createAttachmentHandler
 );
 router.get('/attachments/:attachmentId', authMiddleware, getAttachmentByIdHandler);
-router.post(
-  '/attachments',
-  authMiddleware,
-  validate(createAttachmentSchema),
-  createAttachmentHandler
-);
 router.delete('/attachments/:attachmentId', authMiddleware, deleteAttachmentHandler);
 
 export default router;

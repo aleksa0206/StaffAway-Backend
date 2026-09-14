@@ -24,18 +24,21 @@ export async function findLeaveRequestById(leaveRequestId: number): Promise<Leav
   });
 }
 
-export async function createLeaveRequest(data: {
-  startDate: Date;
-  endDate: Date;
-  totalDays: number;
-  status: 'Pending' | 'Approval' | 'Rejected';
-  comment?: string;
-  userId: number;
-  approvedById?: number;
-  leaveTypeId: number;
-  companyId: number;
-}): Promise<LeaveRequest> {
-  return await prisma.leaveRequest.create({ data });
+export async function createLeaveRequest(
+  data: {
+    startDate: Date;
+    endDate: Date;
+    totalDays: number;
+    status: 'Pending' | 'Approval' | 'Rejected';
+    comment?: string;
+    userId: number;
+    approvedById?: number;
+    leaveTypeId: number;
+    companyId: number;
+  },
+  client: PrismaClientOrTx = prisma
+): Promise<LeaveRequest> {
+  return await client.leaveRequest.create({ data });
 }
 
 export async function updateLeaveRequest(
@@ -63,9 +66,10 @@ export async function findOverlappingLeaveRequests(
   userId: number,
   startDate: Date,
   endDate: Date,
-  excludeLeaveRequestId?: number
+  excludeLeaveRequestId?: number,
+  client: PrismaClientOrTx = prisma
 ): Promise<LeaveRequest[]> {
-  return await prisma.leaveRequest.findMany({
+  return await client.leaveRequest.findMany({
     where: {
       userId,
       status: { not: 'Rejected' },
@@ -74,4 +78,11 @@ export async function findOverlappingLeaveRequests(
       ...(excludeLeaveRequestId ? { id: { not: excludeLeaveRequestId } } : {}),
     },
   });
+}
+
+export async function lockUserForLeaveRequestWrite(
+  userId: number,
+  client: Prisma.TransactionClient
+): Promise<void> {
+  await client.$queryRaw`SELECT id FROM User WHERE id = ${userId} FOR UPDATE`;
 }

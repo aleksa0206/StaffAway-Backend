@@ -4,17 +4,18 @@ import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 import { PLATFORM_COMPANY_ID } from '../config/constants';
 
-function assertPlatformAdmin(companyId: number) {
-  if (companyId !== PLATFORM_COMPANY_ID) {
+function assertPlatformAdmin(companyId: number, role: string) {
+  if (companyId !== PLATFORM_COMPANY_ID || role !== 'Hr') {
     throw new ForbiddenError('Only platform administrators can perform this action');
   }
 }
 
 export async function getAllCompanies(
   requestingCompanyId: number,
+  role: string,
   pagination: { skip: number; take: number }
 ) {
-  assertPlatformAdmin(requestingCompanyId);
+  assertPlatformAdmin(requestingCompanyId, role);
   return await companyRepository.findAllCompanies(pagination);
 }
 
@@ -24,8 +25,12 @@ export async function getOwnCompany(companyId: number) {
   return company;
 }
 
-export async function createCompany(data: { name: string }, requestingCompanyId: number) {
-  assertPlatformAdmin(requestingCompanyId);
+export async function createCompany(
+  data: { name: string },
+  requestingCompanyId: number,
+  role: string
+) {
+  assertPlatformAdmin(requestingCompanyId, role);
   return await companyRepository.createCompany(data);
 }
 

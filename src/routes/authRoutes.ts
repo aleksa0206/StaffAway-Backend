@@ -12,16 +12,43 @@ import {
 } from '../controllers/authController';
 import { loginDbRateLimiter } from '../middleware/dbRateLimiter';
 import { authMiddleware } from '../middleware/authMiddleware';
-
+import { validate } from '../middleware/validate';
+import {
+  loginSchema,
+  verifyTwoFactorLoginSchema,
+  twoFactorCodeSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from '../validation/authSchemas';
 
 const router = Router();
-router.post('/auth/login', loginDbRateLimiter, loginHandler);
-router.post('/auth/2fa/verify-login', loginDbRateLimiter, verifyTwoFactorLoginHandler);
+router.post('/auth/login', loginDbRateLimiter, validate(loginSchema), loginHandler);
+router.post(
+  '/auth/2fa/verify-login',
+  loginDbRateLimiter,
+  validate(verifyTwoFactorLoginSchema),
+  verifyTwoFactorLoginHandler
+);
 router.post('/auth/2fa/setup', authMiddleware, setupTwoFactorHandler);
-router.post('/auth/2fa/confirm', authMiddleware, confirmTwoFactorHandler);
-router.delete('/auth/2fa', authMiddleware, disableTwoFactorHandler);
+router.post(
+  '/auth/2fa/confirm',
+  authMiddleware,
+  validate(twoFactorCodeSchema),
+  confirmTwoFactorHandler
+);
+router.delete('/auth/2fa', authMiddleware, validate(twoFactorCodeSchema), disableTwoFactorHandler);
 router.post('/auth/refresh', refreshHandler);
 router.post('/auth/logout', logoutHandler);
-router.post('/auth/forgot-password', loginDbRateLimiter, requestPasswordResetHandler);
-router.post('/auth/reset-password', loginDbRateLimiter, resetPasswordHandler);
+router.post(
+  '/auth/forgot-password',
+  loginDbRateLimiter,
+  validate(forgotPasswordSchema),
+  requestPasswordResetHandler
+);
+router.post(
+  '/auth/reset-password',
+  loginDbRateLimiter,
+  validate(resetPasswordSchema),
+  resetPasswordHandler
+);
 export default router;

@@ -31,7 +31,6 @@ describe('Refresh token flow', () => {
     const newRefreshCookie = refreshRes.headers['set-cookie'].find((c: string) =>
       c.startsWith('refreshToken=')
     );
-
     expect(newRefreshCookie).toBeDefined();
     expect(newRefreshCookie).not.toBe(originalRefreshCookie);
   });

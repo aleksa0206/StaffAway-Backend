@@ -46,5 +46,6 @@ describe('AuditLog', () => {
 
     const res = await request(app).get('/audit-logs').set('Authorization', `Bearer ${token}`);
 
-expect(res.body.data.some((log: any) => log.action === 'ROLE_CHANGE')).toBe(true);  });
+    expect(res.body.data.some((log: any) => log.action === 'ROLE_CHANGE')).toBe(true);
+  });
 });
