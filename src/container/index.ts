@@ -1,15 +1,18 @@
 ﻿import * as fileStorageService from '../services/fileStorageService';
+import * as emailService from '../services/emailService';
 import { logger } from '../config/logger';
 import { prisma } from '../config/prismaClient';
 
 export interface Container {
   fileStorage: typeof fileStorageService;
+  email: typeof emailService;
   logger: typeof logger;
   prisma: typeof prisma;
 }
 
 let container: Container = {
   fileStorage: fileStorageService,
+  email: emailService,
   logger,
   prisma,
 };
@@ -23,5 +26,5 @@ export function setContainer(overrides: Partial<Container>): void {
 }
 
 export function resetContainer(): void {
-  container = { fileStorage: fileStorageService, logger, prisma };
+  container = { fileStorage: fileStorageService, email: emailService, logger, prisma };
 }

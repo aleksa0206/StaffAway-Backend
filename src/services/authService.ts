@@ -8,7 +8,7 @@ import * as refreshTokenRepository from '../repositories/refreshTokenRepository'
 import { UnauthorizedError } from '../errors/UnauthorizedError';
 import { LockedError } from '../errors/LockedError';
 import { TwoFactorRequiredError } from '../errors/TwoFactorRequiredError';
-import { sendPasswordResetEmail } from './emailService';
+import { getContainer } from '../container';
 import { logger } from '../config/logger';
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
@@ -233,7 +233,7 @@ export async function requestPasswordReset(email: string) {
   const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
 
   await userRepository.setPasswordResetToken(user.id, tokenHash, expiresAt);
-  await sendPasswordResetEmail(user.email, rawToken);
+  await getContainer().email.sendPasswordResetEmail(user.email, rawToken);
 }
 
 export async function resetPassword(rawToken: string, newPassword: string) {
