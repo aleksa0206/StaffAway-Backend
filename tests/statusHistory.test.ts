@@ -19,7 +19,7 @@ describe('StatusHistory', () => {
     await disconnectDb();
   });
 
-  it('vlasnik firme vidi StatusHistory zapis', async () => {
+  it('a user of the owning company can view the StatusHistory entry', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id });
     const leaveType = await createTestLeaveType(company.id);
@@ -42,7 +42,7 @@ describe('StatusHistory', () => {
     expect(res.status).toBe(200);
   });
 
-  it('korisnik druge firme ne vidi tudji zapis (403)', async () => {
+  it('a user from another company cannot view the entry (403)', async () => {
     const companyA = await createTestCompany('A');
     const companyB = await createTestCompany('B');
     const { user: userA } = await createTestUser({ companyId: companyA.id });

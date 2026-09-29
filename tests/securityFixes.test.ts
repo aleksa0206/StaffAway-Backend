@@ -12,7 +12,7 @@ import {
   createTestLeaveBalance,
 } from './helpers/testFactory';
 
-describe('Bezbednosne ispravke (treca sesija)', () => {
+describe('Security fixes', () => {
   afterEach(async () => {
     await cleanDatabase();
   });
@@ -21,7 +21,7 @@ describe('Bezbednosne ispravke (treca sesija)', () => {
     await disconnectDb();
   });
 
-  it('LeaveBalance: POST vraca 403 za Employee rolu', async () => {
+  it('LeaveBalance: POST returns 403 for the Employee role', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const leaveType = await createTestLeaveType(company.id);
@@ -35,7 +35,7 @@ describe('Bezbednosne ispravke (treca sesija)', () => {
     expect(res.status).toBe(403);
   });
 
-  it('LeaveBalance: Hr ne moze da kreira balans za korisnika druge firme', async () => {
+  it('LeaveBalance: Hr cannot create a balance for a user from another company', async () => {
     const companyA = await createTestCompany('A');
     const companyB = await createTestCompany('B');
     const { user: hr } = await createTestUser({ companyId: companyA.id, role: 'Hr' });
@@ -57,7 +57,7 @@ describe('Bezbednosne ispravke (treca sesija)', () => {
     expect(res.status).toBe(403);
   });
 
-  it('Attachment: Employee ne vidi tudji attachment u istoj firmi, Manager vidi', async () => {
+  it("Attachment: an Employee cannot view a colleague's attachment in the same company, a Manager can", async () => {
     const company = await createTestCompany();
     const { user: owner } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const { user: colleague } = await createTestUser({ companyId: company.id, role: 'Employee' });
@@ -88,7 +88,7 @@ describe('Bezbednosne ispravke (treca sesija)', () => {
     expect(managerRes.status).toBe(200);
   });
 
-  it('LeaveRequest: Employee ne sme da obrise tudji zahtev, ali sme sopstveni', async () => {
+  it("LeaveRequest: an Employee cannot delete someone else's request, but can delete their own", async () => {
     const company = await createTestCompany();
     const { user: owner } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const { user: colleague } = await createTestUser({ companyId: company.id, role: 'Employee' });
@@ -117,7 +117,7 @@ describe('Bezbednosne ispravke (treca sesija)', () => {
     expect(okRes.status).toBe(200);
   });
 
-  it('Comment: Employee ne sme da izmeni ili obrise tudji komentar', async () => {
+  it("Comment: an Employee cannot edit or delete someone else's comment", async () => {
     const company = await createTestCompany();
     const { user: author } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const { user: other } = await createTestUser({ companyId: company.id, role: 'Employee' });
@@ -146,7 +146,7 @@ describe('Bezbednosne ispravke (treca sesija)', () => {
     expect(deleteRes.status).toBe(403);
   });
 
-  it('Notification/StatusHistory/AuditLog: javni POST vise ne postoji (404)', async () => {
+  it('Notification/StatusHistory/AuditLog: the public POST no longer exists (404)', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Hr' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -170,7 +170,7 @@ describe('Bezbednosne ispravke (treca sesija)', () => {
     expect(auditRes.status).toBe(404);
   });
 
-  it('Disable 2FA: zahteva ispravan TOTP kod', async () => {
+  it('Disable 2FA: requires a valid TOTP code', async () => {
     const company = await createTestCompany();
     const { user, rawPassword } = await createTestUser({ companyId: company.id });
     const loginRes = await request(app)
@@ -196,7 +196,7 @@ describe('Bezbednosne ispravke (treca sesija)', () => {
     expect(wrongCodeRes.status).toBe(401);
   });
 
-  it('ApiKey: GET vraca 403 za Employee rolu', async () => {
+  it('ApiKey: GET returns 403 for the Employee role', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -206,7 +206,7 @@ describe('Bezbednosne ispravke (treca sesija)', () => {
     expect(res.status).toBe(403);
   });
 
-  it('ApiKey: server generise kljuc, klijentov "key" u body-ju se ignorise', async () => {
+  it('ApiKey: the server generates the key; a client-supplied "key" in the body is ignored', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Hr' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -221,7 +221,7 @@ describe('Bezbednosne ispravke (treca sesija)', () => {
     expect(res.body.key).toHaveLength(64);
   });
 
-  it('LeaveBalance: Hr i dalje moze legitimno da azurira balans (pozitivan slucaj)', async () => {
+  it('LeaveBalance: Hr can still legitimately update a balance (positive case)', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Hr' });
     const leaveType = await createTestLeaveType(company.id);

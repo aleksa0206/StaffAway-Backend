@@ -18,5 +18,5 @@
         "moduleDetection": "force",
         "skipLibCheck": true
     },
-    "exclude": ["node_modules", "dist", "prisma.config.ts", "tests", "jest.config.ts"]
+    "exclude": ["node_modules", "dist", "prisma.config.ts", "prisma", "tests", "jest.config.ts"]
 }

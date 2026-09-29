@@ -1,4 +1,5 @@
 import { prisma } from '../config/prismaClient';
+import { compact } from '../utils/queryParams';
 import type { LeaveBalance, Prisma } from '@prisma/client';
 
 type PrismaClientOrTx = typeof prisma | Prisma.TransactionClient;
@@ -22,15 +23,26 @@ export async function updateLeaveBalance(
 
 export async function findAllLeaveBalances(
   companyId: number,
+  filters: { userIds?: number[] | undefined; year?: number | undefined },
   pagination: { skip: number; take: number }
 ) {
+  const where = compact({
+    companyId,
+    userId: filters.userIds ? { in: filters.userIds } : undefined,
+    year: filters.year,
+  });
   const [data, total] = await Promise.all([
     prisma.leaveBalance.findMany({
-      where: { companyId },
+      where,
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true } },
+        leaveType: { select: { id: true, name: true } },
+      },
+      orderBy: [{ year: 'desc' }, { leaveTypeId: 'asc' }],
       skip: pagination.skip,
       take: pagination.take,
     }),
-    prisma.leaveBalance.count({ where: { companyId } }),
+    prisma.leaveBalance.count({ where }),
   ]);
   return { data, total };
 }

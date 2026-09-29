@@ -4,15 +4,32 @@ import * as leaveBalanceRepository from '../repositories/leaveBalanceRepository'
 import * as statusHistoryRepository from '../repositories/statusHistoryRepository';
 import * as companySettingsRepository from '../repositories/companySettingsRepository';
 import * as notificationRepository from '../repositories/notificationRepository';
+import * as userRepository from '../repositories/userRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 import { ConflictError } from '../errors/ConflictError';
 import { ValidationError } from '../errors/ValidationError';
 import { prisma } from '../config/prismaClient';
-import { Prisma } from '@prisma/client';
+import { LeaveStatus, Prisma } from '@prisma/client';
 
-type LeaveStatus = 'Pending' | 'Approval' | 'Rejected';
 type PrismaClientOrTx = typeof prisma | Prisma.TransactionClient;
+type RequestingUser = { userId: number; role: string };
+
+function isManagerOrHr(role: string) {
+  return role === 'Manager' || role === 'Hr';
+}
+
+// Everyone in the company can see who is away and when (the team calendar depends on it),
+// but the requester's note is only for the requester, managers and Hr.
+function redactForViewer<T extends { userId: number; comment: string | null }>(
+  leaveRequest: T,
+  viewer: RequestingUser
+): T {
+  if (isManagerOrHr(viewer.role) || leaveRequest.userId === viewer.userId) {
+    return leaveRequest;
+  }
+  return { ...leaveRequest, comment: null };
+}
 
 async function assertNoOverlap(
   userId: number,
@@ -81,9 +98,52 @@ async function adjustLeaveBalanceOnStatusChange(
 
 export async function getAllLeaveRequests(
   companyId: number,
-  pagination: { skip: number; take: number }
+  filters: leaveRequestRepository.LeaveRequestFilters,
+  pagination: { skip: number; take: number },
+  viewer: RequestingUser
 ) {
-  return await leaveRequestRepository.findAllLeaveRequests(companyId, pagination);
+  const { data, total } = await leaveRequestRepository.findAllLeaveRequests(
+    companyId,
+    filters,
+    pagination
+  );
+  return { data: data.map((request) => redactForViewer(request, viewer)), total };
+}
+
+async function assertCanDecide(
+  leaveRequest: { userId: number },
+  deciderId: number,
+  deciderRole: string
+) {
+  if (deciderRole === 'Employee') {
+    throw new ForbiddenError('Only Manager or Hr can approve or reject leave requests');
+  }
+  if (leaveRequest.userId === deciderId) {
+    throw new ForbiddenError('You cannot decide on your own leave request');
+  }
+  if (deciderRole === 'Manager') {
+    const requester = await userRepository.findById(leaveRequest.userId);
+    if (requester?.managerId !== deciderId) {
+      throw new ForbiddenError(
+        'Managers can only decide on leave requests of their direct reports'
+      );
+    }
+  }
+}
+
+function assertCanCancel(
+  leaveRequest: { userId: number; status: LeaveStatus; startDate: Date },
+  requestingUserId: number
+) {
+  if (leaveRequest.userId !== requestingUserId) {
+    throw new ForbiddenError('You can only cancel your own leave requests');
+  }
+  if (leaveRequest.status !== 'Pending' && leaveRequest.status !== 'Approval') {
+    throw new ConflictError('Only pending or approved leave requests can be cancelled');
+  }
+  if (leaveRequest.startDate <= new Date()) {
+    throw new ConflictError('Leave that has already started cannot be cancelled');
+  }
 }
 
 export async function updateLeaveRequest(
@@ -97,7 +157,6 @@ export async function updateLeaveRequest(
     totalDays?: number;
     status?: LeaveStatus;
     comment?: string;
-    approvedById?: number;
   }
 ) {
   const leaveRequest = await leaveRequestRepository.findLeaveRequestById(leaveRequestId);
@@ -105,9 +164,18 @@ export async function updateLeaveRequest(
   if (leaveRequest.companyId !== companyId) throw new ForbiddenError();
 
   const isOwner = leaveRequest.userId === changedById;
-  const isManagerOrHr = changedByRole === 'Manager' || changedByRole === 'Hr';
-  if (!isOwner && !isManagerOrHr) {
+  if (!isOwner && !isManagerOrHr(changedByRole)) {
     throw new ForbiddenError('You can only update your own leave requests');
+  }
+
+  const editsDetails =
+    data.startDate !== undefined ||
+    data.endDate !== undefined ||
+    data.totalDays !== undefined ||
+    data.comment !== undefined;
+  // Editing an approved request would not correct usedDays; an approved request is cancelled via a status change instead.
+  if (editsDetails && leaveRequest.status !== 'Pending') {
+    throw new ConflictError('Only pending leave requests can be edited');
   }
 
   const effectiveStartDate = data.startDate ?? leaveRequest.startDate;
@@ -116,13 +184,21 @@ export async function updateLeaveRequest(
 
   assertTotalDaysWithinRange(effectiveStartDate, effectiveEndDate, effectiveTotalDays);
 
-  const oldStatus = leaveRequest.status as LeaveStatus;
+  const oldStatus = leaveRequest.status;
   const newStatus = data.status ?? oldStatus;
   const statusChanged = newStatus !== oldStatus;
 
-  if (changedByRole === 'Employee' && (statusChanged || data.approvedById !== undefined)) {
-    throw new ForbiddenError('Only Manager or Hr can approve or reject leave requests');
+  if (statusChanged) {
+    if (oldStatus === 'Cancelled') {
+      throw new ConflictError('Cancelled leave requests cannot be changed');
+    }
+    if (newStatus === 'Cancelled') {
+      assertCanCancel(leaveRequest, changedById);
+    } else {
+      await assertCanDecide(leaveRequest, changedById, changedByRole);
+    }
   }
+
   return await prisma.$transaction(async (tx) => {
     if (data.startDate || data.endDate) {
       await leaveRequestRepository.lockUserForLeaveRequestWrite(leaveRequest.userId, tx);
@@ -141,7 +217,7 @@ export async function updateLeaveRequest(
         leaveRequest.userId,
         leaveRequest.leaveTypeId,
         effectiveTotalDays,
-        effectiveStartDate.getFullYear(),
+        effectiveStartDate.getUTCFullYear(),
         oldStatus,
         newStatus
       );
@@ -167,15 +243,31 @@ export async function updateLeaveRequest(
       }
     }
 
-    return await leaveRequestRepository.updateLeaveRequest(leaveRequestId, data, tx);
+    // The decider is recorded on approve/reject; a cancellation keeps who decided before.
+    const decision =
+      newStatus === 'Approval' || newStatus === 'Rejected'
+        ? { approvedById: changedById }
+        : newStatus === 'Pending'
+          ? { approvedById: null }
+          : {};
+
+    return await leaveRequestRepository.updateLeaveRequest(
+      leaveRequestId,
+      statusChanged ? { ...data, ...decision } : data,
+      tx
+    );
   });
 }
 
-export async function getLeaveRequestById(leaveRequestId: number, companyId: number) {
+export async function getLeaveRequestById(
+  leaveRequestId: number,
+  companyId: number,
+  viewer: RequestingUser
+) {
   const leaveRequest = await leaveRequestRepository.findLeaveRequestById(leaveRequestId);
   if (!leaveRequest) throw new NotFoundError('LeaveRequest');
   if (leaveRequest.companyId !== companyId) throw new ForbiddenError();
-  return leaveRequest;
+  return redactForViewer(leaveRequest, viewer);
 }
 
 async function assertMinimumNotice(companyId: number, startDate: Date) {
@@ -202,20 +294,52 @@ export async function createLeaveRequest(data: {
   leaveTypeId: number;
   companyId: number;
 }) {
+  const leaveType = await leaveTypeRepository.findLeaveTypeById(data.leaveTypeId);
+  if (!leaveType || leaveType.companyId !== data.companyId) {
+    throw new NotFoundError('LeaveType');
+  }
+
   await assertMinimumNotice(data.companyId, data.startDate);
   assertTotalDaysWithinRange(data.startDate, data.endDate, data.totalDays);
+
+  const requester = await userRepository.findById(data.userId);
 
   return await prisma.$transaction(async (tx) => {
     await leaveRequestRepository.lockUserForLeaveRequestWrite(data.userId, tx);
     await assertNoOverlap(data.userId, data.startDate, data.endDate, undefined, tx);
 
-    return await leaveRequestRepository.createLeaveRequest(
-      {
-        ...data,
-        status: 'Pending',
-      },
+    // Leave types that don't require approval (e.g. sick leave) are approved on submission.
+    if (!leaveType.requiresApproval) {
+      await adjustLeaveBalanceOnStatusChange(
+        tx,
+        data.userId,
+        data.leaveTypeId,
+        data.totalDays,
+        data.startDate.getUTCFullYear(),
+        'Pending',
+        'Approval'
+      );
+      return await leaveRequestRepository.createLeaveRequest({ ...data, status: 'Approval' }, tx);
+    }
+
+    const created = await leaveRequestRepository.createLeaveRequest(
+      { ...data, status: 'Pending' },
       tx
     );
+
+    if (requester?.managerId) {
+      await notificationRepository.createNotification(
+        {
+          userId: requester.managerId,
+          message: `${requester.firstName} ${requester.lastName} submitted a leave request.`,
+          isRead: false,
+          type: 'LeaveRequestSubmitted',
+        },
+        tx
+      );
+    }
+
+    return created;
   });
 }
 
@@ -230,9 +354,11 @@ export async function deleteLeaveRequest(
   if (leaveRequest.companyId !== companyId) throw new ForbiddenError();
 
   const isOwner = leaveRequest.userId === requestingUserId;
-  const isManagerOrHr = requestingUserRole === 'Manager' || requestingUserRole === 'Hr';
-  if (!isOwner && !isManagerOrHr) {
+  if (!isOwner && !isManagerOrHr(requestingUserRole)) {
     throw new ForbiddenError('You can only delete your own leave requests');
+  }
+  if (leaveRequest.status !== 'Pending') {
+    throw new ConflictError('Only pending leave requests can be deleted');
   }
 
   return await leaveRequestRepository.removeLeaveRequest(leaveRequestId);

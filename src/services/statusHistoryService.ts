@@ -4,9 +4,10 @@ import { ForbiddenError } from '../errors/ForbiddenError';
 
 export async function getAllStatusHistories(
   companyId: number,
+  filters: { leaveRequestId?: number | undefined },
   pagination: { skip: number; take: number }
 ) {
-  return await statusHistoryRepository.findAllStatusHistories(companyId, pagination);
+  return await statusHistoryRepository.findAllStatusHistories(companyId, filters, pagination);
 }
 
 export async function getStatusHistoryById(statusHistoryId: number, companyId: number) {

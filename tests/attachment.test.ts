@@ -19,7 +19,7 @@ describe('Attachment', () => {
     await disconnectDb();
   });
 
-  it('vlasnik firme moze da vidi attachment', async () => {
+  it('a user of the owning company can view the attachment', async () => {
     const companyA = await createTestCompany('A');
     const { user } = await createTestUser({ companyId: companyA.id });
     const leaveType = await createTestLeaveType(companyA.id);
@@ -38,7 +38,7 @@ describe('Attachment', () => {
     expect(res.status).toBe(200);
   });
 
-  it('korisnik ne sme da zakaci fajl na leaveRequest tudje firme (403)', async () => {
+  it("a user cannot attach a file to another company's leave request (403)", async () => {
     const companyA = await createTestCompany('A');
     const companyB = await createTestCompany('B');
     const { user: userA } = await createTestUser({ companyId: companyA.id });
@@ -63,7 +63,7 @@ describe('Attachment', () => {
     expect(res.status).toBe(403);
   });
 
-  it('nepostojeci attachment vraca 404', async () => {
+  it('a non-existent attachment returns 404', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -75,7 +75,7 @@ describe('Attachment', () => {
     expect(res.status).toBe(404);
   });
 
-  it('vlasnik moze da obrise attachment, posle brisanja GET vraca 404', async () => {
+  it('the owner can delete an attachment; GET returns 404 afterwards', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id });
     const leaveType = await createTestLeaveType(company.id);

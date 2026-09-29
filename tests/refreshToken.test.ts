@@ -12,7 +12,7 @@ describe('Refresh token flow', () => {
     await disconnectDb();
   });
 
-  it('refresh token izdaje nov access token i rotira refresh cookie', async () => {
+  it('the refresh token issues a new access token and rotates the refresh cookie', async () => {
     const company = await createTestCompany();
     const { user, rawPassword } = await createTestUser({ companyId: company.id });
 
@@ -36,7 +36,7 @@ describe('Refresh token flow', () => {
     expect(newRefreshCookie).not.toBe(originalRefreshCookie);
   });
 
-  it('stari refresh token se ne moze ponovo iskoristiti posle rotacije', async () => {
+  it('an old refresh token cannot be reused after rotation', async () => {
     const company = await createTestCompany();
     const { user, rawPassword } = await createTestUser({ companyId: company.id });
 
@@ -55,13 +55,13 @@ describe('Refresh token flow', () => {
     expect(secondAttemptRes.status).toBe(401);
   });
 
-  it('refresh bez cookie-ja vraca 401', async () => {
+  it('refresh without a cookie returns 401', async () => {
     const res = await request(app).post('/auth/refresh');
 
     expect(res.status).toBe(401);
   });
 
-  it('logout ponistava refresh token, naredni refresh pokusaj pada', async () => {
+  it('logout revokes the refresh token; the next refresh attempt fails', async () => {
     const company = await createTestCompany();
     const { user, rawPassword } = await createTestUser({ companyId: company.id });
 

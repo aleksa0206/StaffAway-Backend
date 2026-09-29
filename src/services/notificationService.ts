@@ -4,9 +4,10 @@ import { ForbiddenError } from '../errors/ForbiddenError';
 
 export async function getAllNotifications(
   userId: number,
+  filters: { isRead?: boolean | undefined },
   pagination: { skip: number; take: number }
 ) {
-  return await notificationRepository.findAllNotifications(userId, pagination);
+  return await notificationRepository.findAllNotifications(userId, filters, pagination);
 }
 
 export async function getNotificationById(notificationId: number, userId: number) {

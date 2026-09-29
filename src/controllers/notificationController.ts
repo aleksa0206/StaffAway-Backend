@@ -1,12 +1,14 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as notificationService from '../services/notificationService';
 import { buildPaginationMeta, parsePagination } from '../utils/pagination';
+import { parseOptionalBooleanQuery } from '../utils/queryParams';
 
 export async function getAllNotificationsHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const pagination = parsePagination(req);
     const { data, total } = await notificationService.getAllNotifications(
       req.user!.userId,
+      { isRead: parseOptionalBooleanQuery(req, 'isRead') },
       pagination
     );
     res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });

@@ -12,7 +12,7 @@ describe('Rate limiting', () => {
     await disconnectDb();
   });
 
-  it('vraca 429 posle 10 pokusaja login-a u kratkom vremenskom periodu', async () => {
+  it('returns 429 after 10 login attempts in a short period', async () => {
     const company = await createTestCompany();
 
     let lastStatus = 0;

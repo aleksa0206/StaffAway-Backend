@@ -8,6 +8,7 @@ export async function findAllDepartments(
   const [data, total] = await Promise.all([
     prisma.department.findMany({
       where: { companyId },
+      orderBy: { name: 'asc' },
       skip: pagination.skip,
       take: pagination.take,
     }),

@@ -5,9 +5,10 @@ import * as userRepository from '../repositories/userRepository';
 
 export async function getAllWorkSchedules(
   companyId: number,
+  filters: { userId?: number | undefined },
   pagination: { skip: number; take: number }
 ) {
-  return await workScheduleRepository.findAllWorkSchedules(companyId, pagination);
+  return await workScheduleRepository.findAllWorkSchedules(companyId, filters, pagination);
 }
 
 export async function getWorkScheduleById(workScheduleId: number, companyId: number) {

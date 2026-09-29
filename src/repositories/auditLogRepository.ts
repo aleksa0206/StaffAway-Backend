@@ -8,6 +8,8 @@ export async function findAllAuditLogs(
   const [data, total] = await Promise.all([
     prisma.auditLog.findMany({
       where: { companyId },
+      include: { performedBy: { select: { id: true, firstName: true, lastName: true } } },
+      orderBy: { createdAt: 'desc' },
       skip: pagination.skip,
       take: pagination.take,
     }),

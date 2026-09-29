@@ -6,7 +6,12 @@ export async function findAllApiKeys(
   pagination: { skip: number; take: number }
 ) {
   const [data, total] = await Promise.all([
-    prisma.apiKey.findMany({ where: { companyId }, skip: pagination.skip, take: pagination.take }),
+    prisma.apiKey.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+      skip: pagination.skip,
+      take: pagination.take,
+    }),
     prisma.apiKey.count({ where: { companyId } }),
   ]);
   return { data, total };

@@ -1,6 +1,7 @@
 import { User } from '@prisma/client';
 import { prisma } from '../config/prismaClient';
 import { Prisma } from '@prisma/client';
+import { compact } from '../utils/queryParams';
 
 type PrismaClientOrTx = typeof prisma | Prisma.TransactionClient;
 
@@ -18,15 +19,52 @@ const userSafeSelect = {
   updatedAt: true,
 } as const;
 
-export async function findAll(companyId: number, pagination: { skip: number; take: number }) {
+export const USER_SORTS = ['name', '-name', 'hireDate', '-hireDate'] as const;
+export type UserSort = (typeof USER_SORTS)[number];
+
+const USER_ORDER_BY: Record<UserSort, Prisma.UserOrderByWithRelationInput[]> = {
+  name: [{ lastName: 'asc' }, { firstName: 'asc' }],
+  '-name': [{ lastName: 'desc' }, { firstName: 'desc' }],
+  hireDate: [{ hireDate: 'asc' }],
+  '-hireDate': [{ hireDate: 'desc' }],
+};
+
+export type UserFilters = {
+  managerId?: number | undefined;
+  departmentId?: number | undefined;
+  role?: 'Employee' | 'Manager' | 'Hr' | undefined;
+  /** Matches first name, last name or email (case-insensitive with MySQL's default collation). */
+  search?: string | undefined;
+  sort?: UserSort | undefined;
+};
+
+export async function findAll(
+  companyId: number,
+  filters: UserFilters,
+  pagination: { skip: number; take: number }
+) {
+  const where = compact({
+    companyId,
+    managerId: filters.managerId,
+    departmentId: filters.departmentId,
+    role: filters.role,
+    OR: filters.search
+      ? [
+          { firstName: { contains: filters.search } },
+          { lastName: { contains: filters.search } },
+          { email: { contains: filters.search } },
+        ]
+      : undefined,
+  });
   const [data, total] = await Promise.all([
     prisma.user.findMany({
-      where: { companyId },
+      where,
       select: userSafeSelect,
+      orderBy: [...USER_ORDER_BY[filters.sort ?? 'name'], { id: 'asc' }],
       skip: pagination.skip,
       take: pagination.take,
     }),
-    prisma.user.count({ where: { companyId } }),
+    prisma.user.count({ where }),
   ]);
   return { data, total };
 }

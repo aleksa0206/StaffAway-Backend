@@ -12,12 +12,16 @@ function isPrivileged(role: string) {
 
 export async function getAllAttachments(
   requestingUser: RequestingUser,
+  filters: { leaveRequestId?: number | undefined },
   pagination: { skip: number; take: number }
 ) {
   return await attachmentRepository.findAllAttachmentsByCompany(
     requestingUser.companyId,
-    pagination,
-    isPrivileged(requestingUser.role) ? undefined : requestingUser.userId
+    {
+      leaveRequestId: filters.leaveRequestId,
+      ownerUserId: isPrivileged(requestingUser.role) ? undefined : requestingUser.userId,
+    },
+    pagination
   );
 }
 
@@ -42,7 +46,7 @@ export async function getAttachmentById(attachmentId: number, requestingUser: Re
 
 export async function createAttachment(
   data: { leaveRequestId: number; fileBuffer: Buffer; originalFileName: string; mimeType: string },
-  companyId: number
+  requestingUser: RequestingUser
 ) {
   const { fileStorage } = getContainer();
 
@@ -51,8 +55,11 @@ export async function createAttachment(
   if (!leaveRequest) {
     throw new NotFoundError('LeaveRequest');
   }
-  if (leaveRequest.companyId !== companyId) {
+  if (leaveRequest.companyId !== requestingUser.companyId) {
     throw new ForbiddenError('Cannot attach file to a leave request outside your company');
+  }
+  if (!isPrivileged(requestingUser.role) && leaveRequest.userId !== requestingUser.userId) {
+    throw new ForbiddenError('You can only attach files to your own leave requests');
   }
 
   const key = await fileStorage.uploadFile(data.fileBuffer, data.originalFileName, data.mimeType);

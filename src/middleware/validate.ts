@@ -7,10 +7,12 @@ export function validate(schema: z.ZodType) {
     const result = schema.safeParse(req.body);
 
     if (!result.success) {
-      const message = result.error.issues
-        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-        .join(', ');
-      return next(new ValidationError(message));
+      const details = result.error.issues.map((issue) => ({
+        path: issue.path.join('.'),
+        message: issue.message,
+      }));
+      const message = details.map((d) => `${d.path}: ${d.message}`).join(', ');
+      return next(new ValidationError(message, details));
     }
 
     req.body = result.data;

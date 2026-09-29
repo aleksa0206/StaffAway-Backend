@@ -1,17 +1,12 @@
 import { S3Client } from '@aws-sdk/client-s3';
-
-function requireEnv(key: string): string {
-  const value = process.env[key];
-  if (!value) throw new Error(`Nedostaje env promenljiva: ${key}`);
-  return value;
-}
+import { env } from './env';
 
 export const s3Client = new S3Client({
-  region: requireEnv('S3_REGION'),
+  region: env.S3_REGION,
   credentials: {
-    accessKeyId: requireEnv('S3_ACCESS_KEY_ID'),
-    secretAccessKey: requireEnv('S3_SECRET_ACCESS_KEY'),
+    accessKeyId: env.S3_ACCESS_KEY_ID,
+    secretAccessKey: env.S3_SECRET_ACCESS_KEY,
   },
 });
 
-export const S3_BUCKET = requireEnv('S3_BUCKET');
+export const S3_BUCKET = env.S3_BUCKET;

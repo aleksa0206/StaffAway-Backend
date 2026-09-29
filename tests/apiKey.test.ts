@@ -13,7 +13,7 @@ describe('ApiKey', () => {
     await disconnectDb();
   });
 
-  it('POST vraca 403 za Employee rolu', async () => {
+  it('POST returns 403 for the Employee role', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -26,7 +26,7 @@ describe('ApiKey', () => {
     expect(res.status).toBe(403);
   });
 
-  it('PUT .../revoke uspeva za Hr rolu', async () => {
+  it('PUT .../revoke succeeds for the Hr role', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Hr' });
     const apiKey = await createTestApiKey(company.id);

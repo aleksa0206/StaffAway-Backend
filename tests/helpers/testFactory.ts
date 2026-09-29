@@ -10,6 +10,7 @@ export async function createTestUser(params: {
   email?: string;
   password?: string;
   role?: 'Employee' | 'Manager' | 'Hr';
+  managerId?: number;
 }) {
   const password = params.password ?? 'password123';
   const passwordHash = await bcrypt.hash(password, 10);
@@ -23,6 +24,7 @@ export async function createTestUser(params: {
       role: params.role ?? 'Employee',
       hireDate: new Date('2024-01-01'),
       companyId: params.companyId,
+      managerId: params.managerId ?? null,
     },
   });
 
@@ -131,7 +133,7 @@ export async function createRawLeaveRequest(params: {
   startDate?: Date;
   endDate?: Date;
   totalDays?: number;
-  status?: 'Pending' | 'Approval' | 'Rejected';
+  status?: 'Pending' | 'Approval' | 'Rejected' | 'Cancelled';
 }) {
   return await prisma.leaveRequest.create({
     data: {
@@ -195,8 +197,8 @@ export async function createTestStatusHistory(params: {
   leaveRequestId: number;
   changedById: number;
   companyId: number;
-  oldStatus?: 'Pending' | 'Approval' | 'Rejected';
-  newStatus?: 'Pending' | 'Approval' | 'Rejected';
+  oldStatus?: 'Pending' | 'Approval' | 'Rejected' | 'Cancelled';
+  newStatus?: 'Pending' | 'Approval' | 'Rejected' | 'Cancelled';
 }) {
   return await prisma.statusHistory.create({
     data: {

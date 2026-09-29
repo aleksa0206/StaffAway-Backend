@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import multer from 'multer';
 import { AppError } from '../errors/AppError';
 import { TwoFactorRequiredError } from '../errors/TwoFactorRequiredError';
+import { ValidationError } from '../errors/ValidationError';
 import { logger } from '../config/logger';
 
 export function errorMiddleware(err: unknown, req: Request, res: Response, next: NextFunction) {
@@ -10,6 +11,11 @@ export function errorMiddleware(err: unknown, req: Request, res: Response, next:
     res
       .status(err.statusCode)
       .json({ error: err.message, tempToken: err.tempToken, twoFactorRequired: true });
+    return;
+  }
+
+  if (err instanceof ValidationError && err.details) {
+    res.status(err.statusCode).json({ error: err.message, details: err.details });
     return;
   }
 

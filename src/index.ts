@@ -1,24 +1,25 @@
+import { env } from './config/env';
 import app from './app';
 import { logger } from './config/logger';
 import { prisma } from './config/prismaClient';
 
-const port = process.env.PORT;
+const port = env.PORT;
 
 const server = app.listen(port, () => {
-  logger.info(`server radi na portu ${port}`);
+  logger.info(`Server listening on port ${port}`);
 });
 
 async function shutdown(signal: string) {
-  logger.info(`${signal} primljen, gasim server...`);
+  logger.info(`${signal} received, shutting down...`);
   server.close(async () => {
-    logger.info('HTTP server zatvoren.');
+    logger.info('HTTP server closed.');
     await prisma.$disconnect();
-    logger.info('Prisma konekcija zatvorena.');
+    logger.info('Prisma connection closed.');
     process.exit(0);
   });
 
   setTimeout(() => {
-    logger.error('Prinudno gasenje - timeout istekao.');
+    logger.error('Forced shutdown: timeout exceeded.');
     process.exit(1);
   }, 10000);
 }

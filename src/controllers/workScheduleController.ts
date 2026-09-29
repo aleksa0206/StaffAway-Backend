@@ -1,12 +1,14 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as workScheduleService from '../services/workScheduleService';
 import { buildPaginationMeta, parsePagination } from '../utils/pagination';
+import { parseOptionalIdQuery } from '../utils/queryParams';
 
 export async function getAllWorkSchedulesHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const pagination = parsePagination(req);
     const { data, total } = await workScheduleService.getAllWorkSchedules(
       req.user!.companyId,
+      { userId: parseOptionalIdQuery(req, 'userId') },
       pagination
     );
     res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });

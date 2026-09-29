@@ -1,17 +1,21 @@
 import { WorkSchedule } from '@prisma/client';
 import { prisma } from '../config/prismaClient';
+import { compact } from '../utils/queryParams';
 
 export async function findAllWorkSchedules(
   companyId: number,
+  filters: { userId?: number | undefined },
   pagination: { skip: number; take: number }
 ) {
+  const where = compact({ companyId, userId: filters.userId });
   const [data, total] = await Promise.all([
     prisma.workSchedule.findMany({
-      where: { companyId },
+      where,
+      orderBy: { id: 'asc' },
       skip: pagination.skip,
       take: pagination.take,
     }),
-    prisma.workSchedule.count({ where: { companyId } }),
+    prisma.workSchedule.count({ where }),
   ]);
   return { data, total };
 }

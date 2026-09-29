@@ -1,6 +1,7 @@
 ﻿import { Router } from 'express';
 import {
   loginHandler,
+  meHandler,
   verifyTwoFactorLoginHandler,
   setupTwoFactorHandler,
   confirmTwoFactorHandler,
@@ -29,6 +30,7 @@ router.post(
   validate(verifyTwoFactorLoginSchema),
   verifyTwoFactorLoginHandler
 );
+router.get('/auth/me', authMiddleware, meHandler);
 router.post('/auth/2fa/setup', authMiddleware, setupTwoFactorHandler);
 router.post(
   '/auth/2fa/confirm',

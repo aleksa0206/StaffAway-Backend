@@ -1,11 +1,26 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as userService from '../services/userService';
 import { buildPaginationMeta, parsePagination } from '../utils/pagination';
+import { USER_SORTS } from '../repositories/userRepository';
+import {
+  parseOptionalEnumQuery,
+  parseOptionalIdQuery,
+  parseOptionalSearchQuery,
+} from '../utils/queryParams';
+
+const ROLES = ['Employee', 'Manager', 'Hr'] as const;
 
 export async function getAllUsersHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const pagination = parsePagination(req);
-    const { data, total } = await userService.getAllUsers(req.user!.companyId, pagination);
+    const filters = {
+      managerId: parseOptionalIdQuery(req, 'managerId'),
+      departmentId: parseOptionalIdQuery(req, 'departmentId'),
+      role: parseOptionalEnumQuery(req, 'role', ROLES),
+      search: parseOptionalSearchQuery(req, 'search'),
+      sort: parseOptionalEnumQuery(req, 'sort', USER_SORTS),
+    };
+    const { data, total } = await userService.getAllUsers(req.user!.companyId, filters, pagination);
     res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });
   } catch (err) {
     next(err);

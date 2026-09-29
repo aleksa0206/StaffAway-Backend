@@ -5,9 +5,10 @@ import { ForbiddenError } from '../errors/ForbiddenError';
 
 export async function getAllLeaveBalances(
   companyId: number,
+  filters: { userIds?: number[] | undefined; year?: number | undefined },
   pagination: { skip: number; take: number }
 ) {
-  return await leaveBalanceRepository.findAllLeaveBalances(companyId, pagination);
+  return await leaveBalanceRepository.findAllLeaveBalances(companyId, filters, pagination);
 }
 
 export async function getLeaveBalanceById(leaveBalanceId: number, companyId: number) {

@@ -18,7 +18,7 @@ function tokenFor(user: { id: number; role: string; companyId: number }) {
   );
 }
 
-describe('LeaveRequest poslovna logika', () => {
+describe('LeaveRequest business logic', () => {
   afterEach(async () => {
     await cleanDatabase();
   });
@@ -27,7 +27,7 @@ describe('LeaveRequest poslovna logika', () => {
     await disconnectDb();
   });
 
-  it('kreira LeaveRequest kad nema preklapanja', async () => {
+  it('creates a LeaveRequest when there is no overlap', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id });
     const leaveType = await createTestLeaveType(company.id);
@@ -51,7 +51,7 @@ describe('LeaveRequest poslovna logika', () => {
     expect(res.body.status).toBe('Pending');
   });
 
-  it('odbija kreiranje kad se datumi preklapaju sa postojecim zahtevom', async () => {
+  it('rejects creation when the dates overlap an existing request', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id });
     const leaveType = await createTestLeaveType(company.id);
@@ -81,7 +81,7 @@ describe('LeaveRequest poslovna logika', () => {
     expect(res.status).toBe(409);
   });
 
-  it('Employee ne sme da odobri sopstveni zahtev (RBAC)', async () => {
+  it('an Employee cannot approve their own request (RBAC)', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({
       companyId: company.id,
@@ -112,15 +112,13 @@ describe('LeaveRequest poslovna logika', () => {
     expect(res.status).toBe(403);
   });
 
-  it('Manager odobrava zahtev i LeaveBalance.usedDays se povecava', async () => {
+  it('a Manager approves a request and LeaveBalance.usedDays increases', async () => {
     const company = await createTestCompany();
+    const { user: manager } = await createTestUser({ companyId: company.id, role: 'Manager' });
     const { user: employee } = await createTestUser({
       companyId: company.id,
       role: 'Employee',
-    });
-    const { user: manager } = await createTestUser({
-      companyId: company.id,
-      role: 'Manager',
+      managerId: manager.id,
     });
     const leaveType = await createTestLeaveType(company.id, {
       countsTowardBalance: true,
@@ -168,7 +166,7 @@ describe('LeaveRequest poslovna logika', () => {
     expect(balance.usedDays).toBe(5);
   });
 
-  it('odbija zahtev koji krsi minDaysNoticeForLeave', async () => {
+  it('rejects a request that violates minDaysNoticeForLeave', async () => {
     const company = await createTestCompany();
     await createTestCompanySettings(company.id, 30);
     const { user } = await createTestUser({ companyId: company.id });

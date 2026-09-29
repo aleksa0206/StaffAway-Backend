@@ -10,8 +10,7 @@ import { LockedError } from '../errors/LockedError';
 import { TwoFactorRequiredError } from '../errors/TwoFactorRequiredError';
 import { getContainer } from '../container';
 import { logger } from '../config/logger';
-
-const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+import { env } from '../config/env';
 
 const totp = new TOTP({
   crypto: new NobleCryptoPlugin(),
@@ -19,7 +18,7 @@ const totp = new TOTP({
   issuer: 'StaffAway',
 });
 
-// ... ostale konstante (REFRESH_TOKEN_TTL_MS, itd.) ostaju iste
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
@@ -36,13 +35,13 @@ function generateRefreshToken() {
 function signAccessToken(user: { id: number; role: string; companyId: number }) {
   return jwt.sign(
     { userId: user.id, role: user.role, companyId: user.companyId },
-    process.env.JWT_SECRET as string,
+    env.JWT_SECRET,
     { expiresIn: '15m' }
   );
 }
 
 function signTempToken(userId: number) {
-  return jwt.sign({ userId, purpose: '2fa-pending' }, process.env.JWT_SECRET as string, {
+  return jwt.sign({ userId, purpose: '2fa-pending' }, env.JWT_SECRET, {
     expiresIn: TEMP_TOKEN_TTL,
   });
 }
@@ -111,7 +110,7 @@ export async function verifyTwoFactorLogin(tempToken: string, code: string) {
   let payload: { userId: number; purpose: string };
 
   try {
-    payload = jwt.verify(tempToken, process.env.JWT_SECRET as string, {
+    payload = jwt.verify(tempToken, env.JWT_SECRET, {
       algorithms: ['HS256'],
     }) as typeof payload;
   } catch {
@@ -135,6 +134,14 @@ export async function verifyTwoFactorLogin(tempToken: string, code: string) {
   const { accessToken, refreshToken } = await issueTokensForUser(user);
 
   return { accessToken, refreshToken, user: userRepository.toSafeUser(user) };
+}
+
+export async function getCurrentUser(userId: number) {
+  const user = await userRepository.findByIdWithAuthFields(userId);
+  if (!user) {
+    throw new UnauthorizedError('User no longer exists');
+  }
+  return { ...userRepository.toSafeUser(user), twoFactorEnabled: user.twoFactorEnabled };
 }
 
 export async function setupTwoFactor(userId: number) {
@@ -248,6 +255,6 @@ export async function resetPassword(rawToken: string, newPassword: string) {
   await userRepository.updatePassword(user.id, newPasswordHash);
   await userRepository.setPasswordResetToken(user.id, null, null);
 
-  // Bezbednosna mera: poništi SVE postojece refresh tokene nakon reset-a lozinke
+  // Security measure: revoke ALL existing refresh tokens after a password reset
   await refreshTokenRepository.revokeAllForUser(user.id);
 }

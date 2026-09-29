@@ -14,7 +14,7 @@ describe('Password reset flow', () => {
     await disconnectDb();
   });
 
-  it('forgot-password za postojeci email salje token preko email servisa (mock, bez pravog SMTP-a)', async () => {
+  it('forgot-password for an existing email sends a token via the email service (mock, no real SMTP)', async () => {
     const sendPasswordResetEmail = jest.fn().mockResolvedValue(undefined);
     setContainer({ email: { sendPasswordResetEmail } as any });
 
@@ -28,7 +28,7 @@ describe('Password reset flow', () => {
     expect(sendPasswordResetEmail).toHaveBeenCalledWith(user.email, expect.any(String));
   });
 
-  it('forgot-password za nepostojeci email vraca isti odgovor i NE zove email servis (sprecava enumeraciju)', async () => {
+  it('forgot-password for an unknown email returns the same response and does NOT call the email service (prevents enumeration)', async () => {
     const sendPasswordResetEmail = jest.fn().mockResolvedValue(undefined);
     setContainer({ email: { sendPasswordResetEmail } as any });
 
@@ -40,11 +40,13 @@ describe('Password reset flow', () => {
     expect(sendPasswordResetEmail).not.toHaveBeenCalled();
   });
 
-  it('kompletan flow: forgot-password -> reset-password sa ispravnim tokenom menja lozinku i opoziva refresh tokene', async () => {
+  it('full flow: forgot-password -> reset-password with a valid token changes the password and revokes refresh tokens', async () => {
     let capturedToken = '';
-    const sendPasswordResetEmail = jest.fn().mockImplementation(async (_to: string, token: string) => {
-      capturedToken = token;
-    });
+    const sendPasswordResetEmail = jest
+      .fn()
+      .mockImplementation(async (_to: string, token: string) => {
+        capturedToken = token;
+      });
     setContainer({ email: { sendPasswordResetEmail } as any });
 
     const company = await createTestCompany();
@@ -81,7 +83,7 @@ describe('Password reset flow', () => {
     expect(refreshWithOldCookieRes.status).toBe(401);
   });
 
-  it('reset-password sa netacnim/izmisljenim tokenom vraca 401 i ne menja lozinku', async () => {
+  it('reset-password with a wrong/made-up token returns 401 and does not change the password', async () => {
     const company = await createTestCompany();
     const { user, rawPassword } = await createTestUser({ companyId: company.id });
 
@@ -96,7 +98,7 @@ describe('Password reset flow', () => {
     expect(loginRes.status).toBe(200);
   });
 
-  it('reset-password odbija lozinku kracu od 8 karaktera (Zod validacija)', async () => {
+  it('reset-password rejects a password shorter than 8 characters (Zod validation)', async () => {
     const res = await request(app)
       .post('/auth/reset-password')
       .send({ token: 'bilo-sta', newPassword: 'kratka' });

@@ -10,8 +10,12 @@ import { ForbiddenError } from '../errors/ForbiddenError';
 import { prisma } from '../config/prismaClient';
 import { Prisma } from '@prisma/client';
 
-export async function getAllUsers(companyId: number, pagination: { skip: number; take: number }) {
-  return await userRepository.findAll(companyId, pagination);
+export async function getAllUsers(
+  companyId: number,
+  filters: userRepository.UserFilters,
+  pagination: { skip: number; take: number }
+) {
+  return await userRepository.findAll(companyId, filters, pagination);
 }
 
 export async function getUserById(userId: number, companyId: number) {
@@ -136,8 +140,8 @@ export async function updateUser(
     throw new ForbiddenError('Only Hr can change roles');
   }
 
-  await assertManagerInSameCompany(data.managerId, requestingUser.companyId); // <- DODATO
-  await assertDepartmentInSameCompany(data.departmentId, requestingUser.companyId); // <- DODATO
+  await assertManagerInSameCompany(data.managerId, requestingUser.companyId);
+  await assertDepartmentInSameCompany(data.departmentId, requestingUser.companyId);
 
   const updated = await userRepository.update(targetUserId, data);
 

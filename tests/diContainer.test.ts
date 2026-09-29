@@ -12,13 +12,13 @@ jest.mock('../src/repositories/attachmentRepository', () => ({
 import * as leaveRequestRepository from '../src/repositories/leaveRequestRepository';
 import * as attachmentRepository from '../src/repositories/attachmentRepository';
 
-describe('DI container - attachmentService koristi zamenjivi fileStorage', () => {
+describe('DI container - attachmentService uses a swappable fileStorage', () => {
   afterEach(() => {
     resetContainer();
     jest.clearAllMocks();
   });
 
-  it('poziva mock fileStorage umesto pravog S3, bez mrezenog poziva', async () => {
+  it('calls the mock fileStorage instead of real S3, with no network call', async () => {
     const mockUploadFile = jest.fn().mockResolvedValue('mock-key.pdf');
 
     setContainer({
@@ -32,6 +32,7 @@ describe('DI container - attachmentService koristi zamenjivi fileStorage', () =>
     (leaveRequestRepository.findLeaveRequestById as jest.Mock).mockResolvedValue({
       id: 1,
       companyId: 10,
+      userId: 5,
     });
     (attachmentRepository.createAttachment as jest.Mock).mockResolvedValue({
       id: 1,
@@ -46,14 +47,14 @@ describe('DI container - attachmentService koristi zamenjivi fileStorage', () =>
         originalFileName: 'test.pdf',
         mimeType: 'application/pdf',
       },
-      10
+      { companyId: 10, userId: 5, role: 'Employee' }
     );
 
     expect(mockUploadFile).toHaveBeenCalledTimes(1);
     expect(mockUploadFile).toHaveBeenCalledWith(Buffer.from('x'), 'test.pdf', 'application/pdf');
   });
 
-  it('baca NotFoundError ako leaveRequest ne postoji, bez pozivanja fileStorage', async () => {
+  it('throws NotFoundError when the leaveRequest does not exist, without calling fileStorage', async () => {
     const mockUploadFile = jest.fn();
     setContainer({
       fileStorage: {
@@ -73,7 +74,7 @@ describe('DI container - attachmentService koristi zamenjivi fileStorage', () =>
           originalFileName: 'test.pdf',
           mimeType: 'application/pdf',
         },
-        10
+        { companyId: 10, userId: 5, role: 'Employee' }
       )
     ).rejects.toThrow(NotFoundError);
 

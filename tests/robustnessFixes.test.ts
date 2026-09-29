@@ -10,7 +10,7 @@ import {
   createTestStatusHistory,
 } from './helpers/testFactory';
 
-describe('Robustnost (cetvrta sesija) - Prisma greske, race-condition fixevi', () => {
+describe('Robustness - Prisma errors, race condition fixes', () => {
   afterEach(async () => {
     await cleanDatabase();
   });
@@ -19,19 +19,19 @@ describe('Robustnost (cetvrta sesija) - Prisma greske, race-condition fixevi', (
     await disconnectDb();
   });
 
-  it('Nevalidan (ne-brojcani) id parametar vraca 400, ne 500', async () => {
+  it('an invalid (non-numeric) id parameter returns 400, not 500', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
 
     const res = await request(app)
-      .get('/leave-requests/nije-broj')
+      .get('/leave-requests/not-a-number')
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(400);
   });
 
-  it('DELETE /companies vraca 409 (ne 500) kad firma ima korisnike', async () => {
+  it('DELETE /companies returns 409 (not 500) when the company has users', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Hr' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -41,7 +41,7 @@ describe('Robustnost (cetvrta sesija) - Prisma greske, race-condition fixevi', (
     expect(res.status).toBe(409);
   });
 
-  it('DELETE /leave-requests/:id vraca 409 (ne 500) kad zahtev ima StatusHistory', async () => {
+  it('DELETE /leave-requests/:id returns 409 (not 500) when the request has StatusHistory', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id });
     const leaveType = await createTestLeaveType(company.id);
@@ -64,7 +64,7 @@ describe('Robustnost (cetvrta sesija) - Prisma greske, race-condition fixevi', (
     expect(res.status).toBe(409);
   });
 
-  it('DELETE /leave-types/:id vraca 409 (ne 500) kad postoji LeaveRequest koji ga koristi', async () => {
+  it('DELETE /leave-types/:id returns 409 (not 500) when a LeaveRequest uses it', async () => {
     const company = await createTestCompany();
     const { user: hr } = await createTestUser({ companyId: company.id, role: 'Hr' });
     const leaveType = await createTestLeaveType(company.id);
@@ -82,7 +82,7 @@ describe('Robustnost (cetvrta sesija) - Prisma greske, race-condition fixevi', (
     expect(res.status).toBe(409);
   });
 
-  it('POST /leave-requests odbija totalDays veci od raspona datuma', async () => {
+  it('POST /leave-requests rejects totalDays larger than the date span', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id });
     const leaveType = await createTestLeaveType(company.id);
@@ -101,7 +101,7 @@ describe('Robustnost (cetvrta sesija) - Prisma greske, race-condition fixevi', (
     expect(res.status).toBe(400);
   });
 
-  it('PUT /leave-requests/:id odbija totalDays veci od (izmenjenog) raspona datuma', async () => {
+  it('PUT /leave-requests/:id rejects totalDays larger than the (updated) date span', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id });
     const leaveType = await createTestLeaveType(company.id);

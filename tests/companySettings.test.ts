@@ -13,7 +13,7 @@ describe('CompanySettings', () => {
     await disconnectDb();
   });
 
-  it('POST vraca 403 za Manager rolu', async () => {
+  it('POST returns 403 for the Manager role', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Manager' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -26,7 +26,7 @@ describe('CompanySettings', () => {
     expect(res.status).toBe(403);
   });
 
-  it('POST uspeva za Hr rolu', async () => {
+  it('POST succeeds for the Hr role', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Hr' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });

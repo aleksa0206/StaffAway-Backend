@@ -13,7 +13,7 @@ describe('AuditLog', () => {
     await disconnectDb();
   });
 
-  it('GET vraca 403 za Employee rolu', async () => {
+  it('GET returns 403 for the Employee role', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -23,7 +23,7 @@ describe('AuditLog', () => {
     expect(res.status).toBe(403);
   });
 
-  it('GET uspeva za Manager rolu', async () => {
+  it('GET succeeds for the Manager role', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Manager' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -33,7 +33,7 @@ describe('AuditLog', () => {
     expect(res.status).toBe(200);
   });
 
-  it('automatski se kreira AuditLog kad Hr promeni rolu korisnika', async () => {
+  it("an AuditLog entry is created automatically when Hr changes a user's role", async () => {
     const company = await createTestCompany();
     const { user: hr } = await createTestUser({ companyId: company.id, role: 'Hr' });
     const { user: employee } = await createTestUser({ companyId: company.id, role: 'Employee' });

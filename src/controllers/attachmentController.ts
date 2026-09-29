@@ -1,13 +1,14 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as attachmentService from '../services/attachmentService';
 import { buildPaginationMeta, parsePagination } from '../utils/pagination';
-import { upload } from '../middleware/upload';
+import { parseOptionalIdQuery } from '../utils/queryParams';
 
 export async function getAllAttachmentsHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const pagination = parsePagination(req);
     const { data, total } = await attachmentService.getAllAttachments(
       { companyId: req.user!.companyId, userId: req.user!.userId, role: req.user!.role },
+      { leaveRequestId: parseOptionalIdQuery(req, 'leaveRequestId') },
       pagination
     );
     const responseData = await Promise.all(data.map(attachmentService.toResponseShape));
@@ -50,7 +51,7 @@ export async function createAttachmentHandler(req: Request, res: Response, next:
         originalFileName: req.file.originalname,
         mimeType: req.file.mimetype,
       },
-      req.user!.companyId
+      { companyId: req.user!.companyId, userId: req.user!.userId, role: req.user!.role }
     );
 
     const responseShape = await attachmentService.toResponseShape(attachment);

@@ -1,12 +1,20 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as leaveBalanceService from '../services/leaveBalanceService';
 import { buildPaginationMeta, parsePagination } from '../utils/pagination';
+import { parseOptionalIdListQuery, parseOptionalIdQuery } from '../utils/queryParams';
 
 export async function getAllLeaveBalancesHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const pagination = parsePagination(req);
     const { data, total } = await leaveBalanceService.getAllLeaveBalances(
       req.user!.companyId,
+      {
+        // `userId` (single) stays for existing clients; `userIds` lets a list page load balances in one call.
+        userIds:
+          parseOptionalIdListQuery(req, 'userIds') ??
+          optionalList(parseOptionalIdQuery(req, 'userId')),
+        year: parseOptionalIdQuery(req, 'year'),
+      },
       pagination
     );
     res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });
@@ -71,4 +79,8 @@ export async function deleteLeaveBalanceHandler(req: Request, res: Response, nex
   } catch (err) {
     next(err);
   }
+}
+
+function optionalList(id: number | undefined): number[] | undefined {
+  return id === undefined ? undefined : [id];
 }

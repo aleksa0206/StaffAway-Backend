@@ -36,6 +36,14 @@ export async function verifyTwoFactorLoginHandler(req: Request, res: Response, n
   }
 }
 
+export async function meHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json(await authService.getCurrentUser(req.user!.userId));
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function setupTwoFactorHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const { qrCodeDataUrl } = await authService.setupTwoFactor(req.user!.userId);

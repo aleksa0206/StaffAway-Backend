@@ -6,7 +6,7 @@ datasource db {
   provider = "mysql"
 }
 
-//**************NACIN PISANJA**************//
+//**************CONVENTIONS**************//
 //* model Example {
 //*   id       Int
 //*   Int
@@ -37,6 +37,7 @@ enum LeaveStatus {
   Pending
   Approval
   Rejected
+  Cancelled
 }
 
 

@@ -3,7 +3,11 @@ import { prisma } from '../config/prismaClient';
 
 export async function findAllCompanies(pagination: { skip: number; take: number }) {
   const [data, total] = await Promise.all([
-    prisma.company.findMany({ skip: pagination.skip, take: pagination.take }),
+    prisma.company.findMany({
+      orderBy: { name: 'asc' },
+      skip: pagination.skip,
+      take: pagination.take,
+    }),
     prisma.company.count(),
   ]);
   return { data, total };

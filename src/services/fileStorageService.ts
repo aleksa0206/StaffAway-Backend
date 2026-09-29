@@ -27,7 +27,7 @@ export async function uploadFile(buffer: Buffer, originalName: string, mimeType:
 
 export async function getSignedFileUrl(key: string) {
   const command = new GetObjectCommand({ Bucket: S3_BUCKET, Key: key });
-  return await getSignedUrl(s3Client, command, { expiresIn: 300 }); // 5 minuta
+  return await getSignedUrl(s3Client, command, { expiresIn: 300 }); // 5 minutes
 }
 
 export async function deleteFile(key: string) {

@@ -18,7 +18,7 @@ describe('LeaveBalance ownership', () => {
     await disconnectDb();
   });
 
-  it('korisnik druge firme ne vidi tudji balans (403)', async () => {
+  it('a user from another company cannot view the balance (403)', async () => {
     const companyA = await createTestCompany('A');
     const companyB = await createTestCompany('B');
     const { user: userA } = await createTestUser({ companyId: companyA.id });
@@ -38,7 +38,7 @@ describe('LeaveBalance ownership', () => {
     expect(res.status).toBe(403);
   });
 
-  it('nepostojeci balans vraca 404', async () => {
+  it('a non-existent balance returns 404', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });

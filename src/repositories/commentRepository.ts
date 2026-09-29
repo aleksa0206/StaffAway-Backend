@@ -1,19 +1,35 @@
-import { Comment } from '@prisma/client';
 import { prisma } from '../config/prismaClient';
+import { compact } from '../utils/queryParams';
+
+const commentInclude = {
+  author: { select: { id: true, firstName: true, lastName: true } },
+} as const;
 
 export async function findAllComments(
   companyId: number,
+  filters: { leaveRequestId?: number | undefined; ownerUserId?: number | undefined },
   pagination: { skip: number; take: number }
 ) {
+  const where = compact({
+    companyId,
+    leaveRequestId: filters.leaveRequestId,
+    leaveRequest: filters.ownerUserId !== undefined ? { userId: filters.ownerUserId } : undefined,
+  });
   const [data, total] = await Promise.all([
-    prisma.comment.findMany({ where: { companyId }, skip: pagination.skip, take: pagination.take }),
-    prisma.comment.count({ where: { companyId } }),
+    prisma.comment.findMany({
+      where,
+      include: commentInclude,
+      orderBy: { createdAt: 'asc' },
+      skip: pagination.skip,
+      take: pagination.take,
+    }),
+    prisma.comment.count({ where }),
   ]);
   return { data, total };
 }
 
-export async function findCommentById(commentId: number): Promise<Comment | null> {
-  return await prisma.comment.findUnique({ where: { id: commentId } });
+export async function findCommentById(commentId: number) {
+  return await prisma.comment.findUnique({ where: { id: commentId }, include: commentInclude });
 }
 
 export async function createComment(data: {
@@ -21,22 +37,18 @@ export async function createComment(data: {
   authorId: number;
   companyId: number;
   text: string;
-}): Promise<Comment> {
-  return await prisma.comment.create({ data });
+}) {
+  return await prisma.comment.create({ data, include: commentInclude });
 }
 
-export async function updateComment(
-  commentId: number,
-  data: {
-    leaveRequestId?: number;
-    authorId?: number;
-    companyId?: number;
-    text?: string;
-  }
-): Promise<Comment> {
-  return await prisma.comment.update({ where: { id: commentId }, data });
+export async function updateComment(commentId: number, data: { text?: string }) {
+  return await prisma.comment.update({
+    where: { id: commentId },
+    data,
+    include: commentInclude,
+  });
 }
 
-export async function removeComment(commentId: number): Promise<Comment> {
+export async function removeComment(commentId: number) {
   return await prisma.comment.delete({ where: { id: commentId } });
 }

@@ -12,7 +12,7 @@ describe('2FA flow', () => {
     await disconnectDb();
   });
 
-  it('kompletan flow: setup -> confirm -> login trazi 2FA -> verify-login uspeva', async () => {
+  it('full flow: setup -> confirm -> login requires 2FA -> verify-login succeeds', async () => {
     const company = await createTestCompany();
     const { user, rawPassword } = await createTestUser({ companyId: company.id });
 
@@ -58,7 +58,7 @@ describe('2FA flow', () => {
     expect(verifyRes.body.token).toBeDefined();
   });
 
-  it('disable 2FA vraca login na normalan flow bez tempToken-a', async () => {
+  it('disabling 2FA returns login to the normal flow without a tempToken', async () => {
     const company = await createTestCompany();
     const { user, rawPassword } = await createTestUser({ companyId: company.id });
 

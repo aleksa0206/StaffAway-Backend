@@ -8,6 +8,7 @@ export async function findAllLeaveTypes(
   const [data, total] = await Promise.all([
     prisma.leaveType.findMany({
       where: { companyId },
+      orderBy: { name: 'asc' },
       skip: pagination.skip,
       take: pagination.take,
     }),

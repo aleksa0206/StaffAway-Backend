@@ -10,7 +10,7 @@ function mockResponse() {
 }
 
 describe('errorMiddleware', () => {
-  it('vraca tacan status i poruku za AppError', () => {
+  it('returns the correct status and message for an AppError', () => {
     const err = new NotFoundError('Test');
     const req = { path: '/test', method: 'GET' } as Request;
     const res = mockResponse();
@@ -22,7 +22,7 @@ describe('errorMiddleware', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Test not found' });
   });
 
-  it('vraca generican 500 i NE otkriva detalje za neocekivanu gresku', () => {
+  it('returns a generic 500 and does NOT leak details for an unexpected error', () => {
     const err = new Error('Interna tajna greska sa detaljima baze');
     const req = { path: '/test', method: 'GET' } as Request;
     const res = mockResponse();

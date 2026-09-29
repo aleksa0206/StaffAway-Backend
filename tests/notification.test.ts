@@ -18,7 +18,7 @@ describe('Notification', () => {
     await disconnectDb();
   });
 
-  it('vlasnik vidi sopstvenu notifikaciju', async () => {
+  it('the owner can view their own notification', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id });
     const notification = await createTestNotification({ userId: user.id });
@@ -31,7 +31,7 @@ describe('Notification', () => {
     expect(res.status).toBe(200);
   });
 
-  it('drugi korisnik ne vidi tudju notifikaciju (403)', async () => {
+  it("another user cannot view someone else's notification (403)", async () => {
     const company = await createTestCompany();
     const { user: userA } = await createTestUser({ companyId: company.id });
     const { user: userB } = await createTestUser({ companyId: company.id });
@@ -45,10 +45,14 @@ describe('Notification', () => {
     expect(res.status).toBe(403);
   });
 
-  it('automatski se kreira notifikacija kad Manager odobri LeaveRequest', async () => {
+  it('a notification is created automatically when a Manager approves a LeaveRequest', async () => {
     const company = await createTestCompany();
-    const { user: employee } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const { user: manager } = await createTestUser({ companyId: company.id, role: 'Manager' });
+    const { user: employee } = await createTestUser({
+      companyId: company.id,
+      role: 'Employee',
+      managerId: manager.id,
+    });
     const leaveType = await createTestLeaveType(company.id, { countsTowardBalance: false });
     const employeeToken = tokenFor({ id: employee.id, role: employee.role, companyId: company.id });
     const managerToken = tokenFor({ id: manager.id, role: manager.role, companyId: company.id });
@@ -77,10 +81,14 @@ describe('Notification', () => {
     );
   });
 
-  it('automatski se kreira notifikacija kad Manager odbije LeaveRequest', async () => {
+  it('a notification is created automatically when a Manager rejects a LeaveRequest', async () => {
     const company = await createTestCompany();
-    const { user: employee } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const { user: manager } = await createTestUser({ companyId: company.id, role: 'Manager' });
+    const { user: employee } = await createTestUser({
+      companyId: company.id,
+      role: 'Employee',
+      managerId: manager.id,
+    });
     const leaveType = await createTestLeaveType(company.id, { countsTowardBalance: false });
     const employeeToken = tokenFor({ id: employee.id, role: employee.role, companyId: company.id });
     const managerToken = tokenFor({ id: manager.id, role: manager.role, companyId: company.id });

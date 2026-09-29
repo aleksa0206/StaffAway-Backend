@@ -1,20 +1,24 @@
 import { Notification } from '@prisma/client';
 import { prisma } from '../config/prismaClient';
+import { compact } from '../utils/queryParams';
 import { Prisma } from '@prisma/client';
 
 type PrismaClientOrTx = typeof prisma | Prisma.TransactionClient;
 
 export async function findAllNotifications(
   userId: number,
+  filters: { isRead?: boolean | undefined },
   pagination: { skip: number; take: number }
 ) {
+  const where = compact({ userId, isRead: filters.isRead });
   const [data, total] = await Promise.all([
     prisma.notification.findMany({
-      where: { userId },
+      where,
+      orderBy: { createdAt: 'desc' },
       skip: pagination.skip,
       take: pagination.take,
     }),
-    prisma.notification.count({ where: { userId } }),
+    prisma.notification.count({ where }),
   ]);
   return { data, total };
 }

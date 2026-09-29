@@ -13,7 +13,7 @@ describe('User', () => {
     await disconnectDb();
   });
 
-  it('passwordHash se nikad ne vraca u odgovoru', async () => {
+  it('passwordHash is never returned in a response', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Hr' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -26,7 +26,7 @@ describe('User', () => {
     }
   });
 
-  it('POST /users vraca 403 ako nije Hr', async () => {
+  it('POST /users returns 403 for non-Hr users', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -44,7 +44,7 @@ describe('User', () => {
     expect(res.status).toBe(403);
   });
 
-  it('Employee ne sme da promeni sopstvenu rolu', async () => {
+  it('an Employee cannot change their own role', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -57,7 +57,7 @@ describe('User', () => {
     expect(res.status).toBe(403);
   });
 
-  it('Employee sme da menja sopstveno ime (ne rolu)', async () => {
+  it('an Employee can change their own name (not role)', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -71,7 +71,7 @@ describe('User', () => {
     expect(res.body.firstName).toBe('Promenjeno');
   });
 
-  it('Hr ne sme da obrise sopstveni nalog', async () => {
+  it('Hr cannot delete their own account', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id, role: 'Hr' });
     const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -83,7 +83,7 @@ describe('User', () => {
     expect(res.status).toBe(403);
   });
 
-  it('Hr sme da obrise drugog korisnika', async () => {
+  it('Hr can delete another user', async () => {
     const company = await createTestCompany();
     const { user: hr } = await createTestUser({ companyId: company.id, role: 'Hr' });
     const { user: employee } = await createTestUser({ companyId: company.id, role: 'Employee' });

@@ -6,7 +6,12 @@ export async function findAllHolidays(
   pagination: { skip: number; take: number }
 ) {
   const [data, total] = await Promise.all([
-    prisma.holiday.findMany({ where: { companyId }, skip: pagination.skip, take: pagination.take }),
+    prisma.holiday.findMany({
+      where: { companyId },
+      orderBy: { date: 'asc' },
+      skip: pagination.skip,
+      take: pagination.take,
+    }),
     prisma.holiday.count({ where: { companyId } }),
   ]);
   return { data, total };

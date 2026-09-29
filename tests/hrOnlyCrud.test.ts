@@ -18,7 +18,7 @@ type ResourceCase = {
   seed: (companyId: number, userId: number) => Promise<{ id: number }>;
 };
 
-describe('Resursi ogranicени samo na Hr rolu (Department, LeaveType, Holiday, WorkSchedule)', () => {
+describe('Resources restricted to the Hr role (Department, LeaveType, Holiday, WorkSchedule)', () => {
   afterEach(async () => {
     await cleanDatabase();
   });
@@ -59,7 +59,7 @@ describe('Resursi ogranicени samo na Hr rolu (Department, LeaveType, Holiday,
   ];
 
   describe.each(cases)('$name', ({ basePath, createPayload, seed }) => {
-    it('GET je dozvoljen Employee roli', async () => {
+    it('GET is allowed for the Employee role', async () => {
       const company = await createTestCompany();
       const { user } = await createTestUser({ companyId: company.id, role: 'Employee' });
       await seed(company.id, user.id);
@@ -70,7 +70,7 @@ describe('Resursi ogranicени samo na Hr rolu (Department, LeaveType, Holiday,
       expect(res.status).toBe(200);
     });
 
-    it('POST vraca 403 za Employee rolu', async () => {
+    it('POST returns 403 for the Employee role', async () => {
       const company = await createTestCompany();
       const { user } = await createTestUser({ companyId: company.id, role: 'Employee' });
       const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -83,7 +83,7 @@ describe('Resursi ogranicени samo na Hr rolu (Department, LeaveType, Holiday,
       expect(res.status).toBe(403);
     });
 
-    it('POST uspeva za Hr rolu', async () => {
+    it('POST succeeds for the Hr role', async () => {
       const company = await createTestCompany();
       const { user } = await createTestUser({ companyId: company.id, role: 'Hr' });
       const token = tokenFor({ id: user.id, role: user.role, companyId: company.id });
@@ -96,7 +96,7 @@ describe('Resursi ogranicени samo na Hr rolu (Department, LeaveType, Holiday,
       expect(res.status).toBe(201);
     });
 
-    it('DELETE vraca 403 za Manager rolu', async () => {
+    it('DELETE returns 403 for the Manager role', async () => {
       const company = await createTestCompany();
       const { user } = await createTestUser({ companyId: company.id, role: 'Manager' });
       const seeded = await seed(company.id, user.id);

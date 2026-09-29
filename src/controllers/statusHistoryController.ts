@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as statusHistoryService from '../services/statusHistoryService';
 import { buildPaginationMeta, parsePagination } from '../utils/pagination';
+import { parseOptionalIdQuery } from '../utils/queryParams';
 
 export async function getAllStatusHistoriesHandler(
   req: Request,
@@ -11,6 +12,7 @@ export async function getAllStatusHistoriesHandler(
     const pagination = parsePagination(req);
     const { data, total } = await statusHistoryService.getAllStatusHistories(
       req.user!.companyId,
+      { leaveRequestId: parseOptionalIdQuery(req, 'leaveRequestId') },
       pagination
     );
     res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });

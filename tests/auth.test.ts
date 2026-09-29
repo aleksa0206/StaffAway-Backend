@@ -12,7 +12,7 @@ describe('Auth flow', () => {
     await disconnectDb();
   });
 
-  it('uspesno prijavljuje korisnika sa tacnim kredencijalima', async () => {
+  it('logs in a user with correct credentials', async () => {
     const company = await createTestCompany();
     const { user, rawPassword } = await createTestUser({ companyId: company.id });
 
@@ -26,7 +26,7 @@ describe('Auth flow', () => {
     expect(res.body.user.passwordHash).toBeUndefined();
   });
 
-  it('odbija login sa pogresnom lozinkom', async () => {
+  it('rejects login with a wrong password', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id });
 
@@ -37,7 +37,7 @@ describe('Auth flow', () => {
     expect(res.status).toBe(401);
   });
 
-  it('zakljucava nalog posle 5 neuspesnih pokusaja', async () => {
+  it('locks the account after 5 failed attempts', async () => {
     const company = await createTestCompany();
     const { user } = await createTestUser({ companyId: company.id });
 
@@ -54,7 +54,7 @@ describe('Auth flow', () => {
     expect(res.status).toBe(423);
   });
 
-  it('postavlja refresh token cookie nakon uspesnog login-a', async () => {
+  it('sets the refresh token cookie after a successful login', async () => {
     const company = await createTestCompany();
     const { user, rawPassword } = await createTestUser({ companyId: company.id });
 
