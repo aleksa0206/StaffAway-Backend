@@ -12,8 +12,12 @@ export async function getAllDepartments(
 export async function getDepartmentById(departmentId: number, companyId: number) {
   const department = await departmentRepository.findDepartmentById(departmentId);
 
-  if (!department) throw new NotFoundError('Department');
-  if (department.companyId !== companyId) throw new ForbiddenError();
+  if (!department) {
+    throw new NotFoundError('Department');
+  }
+  if (department.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   return department;
 }
@@ -29,8 +33,12 @@ export async function updateDepartment(
 ) {
   const department = await departmentRepository.findDepartmentById(departmentId);
 
-  if (!department) throw new NotFoundError('Department');
-  if (department.companyId !== companyId) throw new ForbiddenError();
+  if (!department) {
+    throw new NotFoundError('Department');
+  }
+  if (department.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   return await departmentRepository.updateDepartment(departmentId, data);
 }
@@ -38,8 +46,12 @@ export async function updateDepartment(
 export async function deleteDepartment(departmentId: number, companyId: number) {
   const department = await departmentRepository.findDepartmentById(departmentId);
 
-  if (!department) throw new NotFoundError('Department');
-  if (department.companyId !== companyId) throw new ForbiddenError();
+  if (!department) {
+    throw new NotFoundError('Department');
+  }
+  if (department.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   return await departmentRepository.removeDepartment(departmentId);
 }

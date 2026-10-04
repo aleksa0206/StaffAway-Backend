@@ -21,7 +21,9 @@ export async function getAllCompanies(
 
 export async function getOwnCompany(companyId: number) {
   const company = await companyRepository.findCompanyById(companyId);
-  if (!company) throw new NotFoundError('Company');
+  if (!company) {
+    throw new NotFoundError('Company');
+  }
   return company;
 }
 
@@ -45,7 +47,9 @@ export async function updateOwnCompany(
   }
 
   const existing = await companyRepository.findCompanyById(companyId);
-  if (!existing) throw new NotFoundError('Company');
+  if (!existing) {
+    throw new NotFoundError('Company');
+  }
 
   const updated = await companyRepository.updateCompany(companyId, data);
 
@@ -70,7 +74,9 @@ export async function deleteOwnCompany(companyId: number, role: string, performe
   }
 
   const existing = await companyRepository.findCompanyById(companyId);
-  if (!existing) throw new NotFoundError('Company');
+  if (!existing) {
+    throw new NotFoundError('Company');
+  }
 
   const deleted = await companyRepository.removeCompany(companyId);
 

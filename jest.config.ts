@@ -9,6 +9,8 @@ const config: Config = {
   globalSetup: '<rootDir>/tests/globalSetup.ts',
   moduleNameMapper: {
     '^otplib$': '<rootDir>/tests/__mocks__/otplib.ts',
+    // Keeps tests off the real S3 bucket; CI has no AWS credentials.
+    'services/fileStorageService$': '<rootDir>/tests/__mocks__/fileStorageService.ts',
   },
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tests/tsconfig.json' }],

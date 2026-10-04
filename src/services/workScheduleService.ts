@@ -14,8 +14,12 @@ export async function getAllWorkSchedules(
 export async function getWorkScheduleById(workScheduleId: number, companyId: number) {
   const workSchedule = await workScheduleRepository.findWorkScheduleById(workScheduleId);
 
-  if (!workSchedule) throw new NotFoundError('WorkSchedule');
-  if (workSchedule.companyId !== companyId) throw new ForbiddenError();
+  if (!workSchedule) {
+    throw new NotFoundError('WorkSchedule');
+  }
+  if (workSchedule.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   return workSchedule;
 }
@@ -43,8 +47,12 @@ export async function updateWorkSchedule(
 ) {
   const workSchedule = await workScheduleRepository.findWorkScheduleById(workScheduleId);
 
-  if (!workSchedule) throw new NotFoundError('WorkSchedule');
-  if (workSchedule.companyId !== companyId) throw new ForbiddenError();
+  if (!workSchedule) {
+    throw new NotFoundError('WorkSchedule');
+  }
+  if (workSchedule.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   return await workScheduleRepository.updateWorkSchedule(workScheduleId, data);
 }
@@ -52,8 +60,12 @@ export async function updateWorkSchedule(
 export async function deleteWorkSchedule(workScheduleId: number, companyId: number) {
   const workSchedule = await workScheduleRepository.findWorkScheduleById(workScheduleId);
 
-  if (!workSchedule) throw new NotFoundError('WorkSchedule');
-  if (workSchedule.companyId !== companyId) throw new ForbiddenError();
+  if (!workSchedule) {
+    throw new NotFoundError('WorkSchedule');
+  }
+  if (workSchedule.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   return await workScheduleRepository.removeWorkSchedule(workScheduleId);
 }

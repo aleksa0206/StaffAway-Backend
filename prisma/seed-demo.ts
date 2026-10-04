@@ -22,7 +22,9 @@ function workday(offset: number): Date {
   let remaining = Math.abs(offset);
   while (remaining > 0 || date.getUTCDay() === 0 || date.getUTCDay() === 6) {
     date = new Date(date.getTime() + step * DAY_MS);
-    if (date.getUTCDay() !== 0 && date.getUTCDay() !== 6) remaining--;
+    if (date.getUTCDay() !== 0 && date.getUTCDay() !== 6) {
+      remaining--;
+    }
   }
   return date;
 }
@@ -31,7 +33,9 @@ function workdaysBetween(start: Date, end: Date): number {
   let count = 0;
   for (let t = start.getTime(); t <= end.getTime(); t += DAY_MS) {
     const day = new Date(t).getUTCDay();
-    if (day !== 0 && day !== 6) count++;
+    if (day !== 0 && day !== 6) {
+      count++;
+    }
   }
   return count;
 }

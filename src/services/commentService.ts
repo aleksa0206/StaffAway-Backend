@@ -26,12 +26,18 @@ export async function getAllComments(
 
 export async function getCommentById(commentId: number, companyId: number, viewer: Viewer) {
   const comment = await commentRepository.findCommentById(commentId);
-  if (!comment) throw new NotFoundError('Comment');
-  if (comment.companyId !== companyId) throw new ForbiddenError();
+  if (!comment) {
+    throw new NotFoundError('Comment');
+  }
+  if (comment.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
   const ownerUserId = ownerFilterFor(viewer);
   if (ownerUserId !== undefined) {
     const leaveRequest = await leaveRequestRepository.findLeaveRequestById(comment.leaveRequestId);
-    if (leaveRequest?.userId !== ownerUserId) throw new ForbiddenError();
+    if (leaveRequest?.userId !== ownerUserId) {
+      throw new ForbiddenError();
+    }
   }
   return comment;
 }
@@ -46,8 +52,12 @@ export async function createComment(
   authorRole: string
 ) {
   const leaveRequest = await leaveRequestRepository.findLeaveRequestById(data.leaveRequestId);
-  if (!leaveRequest) throw new NotFoundError('LeaveRequest');
-  if (leaveRequest.companyId !== data.companyId) throw new ForbiddenError();
+  if (!leaveRequest) {
+    throw new NotFoundError('LeaveRequest');
+  }
+  if (leaveRequest.companyId !== data.companyId) {
+    throw new ForbiddenError();
+  }
 
   const isManagerOrHr = authorRole === 'Manager' || authorRole === 'Hr';
   if (!isManagerOrHr && leaveRequest.userId !== data.authorId) {
@@ -77,8 +87,12 @@ export async function updateComment(
   data: { text?: string }
 ) {
   const comment = await commentRepository.findCommentById(commentId);
-  if (!comment) throw new NotFoundError('Comment');
-  if (comment.companyId !== companyId) throw new ForbiddenError();
+  if (!comment) {
+    throw new NotFoundError('Comment');
+  }
+  if (comment.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
   assertCommentOwnerOrPrivileged(comment, requestingUserId, requestingUserRole);
   return await commentRepository.updateComment(commentId, data);
 }
@@ -90,8 +104,12 @@ export async function deleteComment(
   requestingUserRole: string
 ) {
   const comment = await commentRepository.findCommentById(commentId);
-  if (!comment) throw new NotFoundError('Comment');
-  if (comment.companyId !== companyId) throw new ForbiddenError();
+  if (!comment) {
+    throw new NotFoundError('Comment');
+  }
+  if (comment.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
   assertCommentOwnerOrPrivileged(comment, requestingUserId, requestingUserRole);
   return await commentRepository.removeComment(commentId);
 }

@@ -7,7 +7,9 @@ function invalid(name: string, message: string): ValidationError {
 
 export function parseOptionalIdQuery(req: Request, name: string): number | undefined {
   const raw = req.query[name];
-  if (raw === undefined) return undefined;
+  if (raw === undefined) {
+    return undefined;
+  }
   const value = Number(raw);
   if (!Number.isInteger(value) || value <= 0) {
     throw invalid(name, 'must be a positive integer');
@@ -21,7 +23,9 @@ export function parseOptionalEnumQuery<T extends string>(
   allowed: readonly T[]
 ): T | undefined {
   const raw = req.query[name];
-  if (raw === undefined) return undefined;
+  if (raw === undefined) {
+    return undefined;
+  }
   if (typeof raw !== 'string' || !allowed.includes(raw as T)) {
     throw invalid(name, `must be one of: ${allowed.join(', ')}`);
   }
@@ -30,7 +34,9 @@ export function parseOptionalEnumQuery<T extends string>(
 
 function optionalString(req: Request, name: string): string | undefined {
   const raw = req.query[name];
-  if (raw === undefined) return undefined;
+  if (raw === undefined) {
+    return undefined;
+  }
   if (typeof raw !== 'string') {
     throw invalid(name, 'must be a single value');
   }
@@ -44,7 +50,9 @@ export function parseOptionalEnumListQuery<T extends string>(
   allowed: readonly T[]
 ): T[] | undefined {
   const raw = optionalString(req, name);
-  if (raw === undefined) return undefined;
+  if (raw === undefined) {
+    return undefined;
+  }
   const values = raw.split(',');
   if (values.some((value) => !allowed.includes(value as T))) {
     throw invalid(name, `must be a comma-separated list of: ${allowed.join(', ')}`);
@@ -55,7 +63,9 @@ export function parseOptionalEnumListQuery<T extends string>(
 /** Comma-separated ids, e.g. `?userIds=1,2,3`. */
 export function parseOptionalIdListQuery(req: Request, name: string): number[] | undefined {
   const raw = optionalString(req, name);
-  if (raw === undefined) return undefined;
+  if (raw === undefined) {
+    return undefined;
+  }
   const values = raw.split(',').map(Number);
   if (values.some((value) => !Number.isInteger(value) || value <= 0)) {
     throw invalid(name, 'must be a comma-separated list of positive integers');
@@ -66,7 +76,9 @@ export function parseOptionalIdListQuery(req: Request, name: string): number[] |
 /** Calendar date `YYYY-MM-DD`, interpreted as UTC midnight like stored leave dates. */
 export function parseOptionalDateQuery(req: Request, name: string): Date | undefined {
   const raw = optionalString(req, name);
-  if (raw === undefined) return undefined;
+  if (raw === undefined) {
+    return undefined;
+  }
   const date = new Date(`${raw}T00:00:00.000Z`);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(raw) || Number.isNaN(date.getTime())) {
     throw invalid(name, 'must be a date in YYYY-MM-DD format');

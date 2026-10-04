@@ -13,8 +13,12 @@ export async function getAllStatusHistories(
 export async function getStatusHistoryById(statusHistoryId: number, companyId: number) {
   const statusHistory = await statusHistoryRepository.findStatusHistoryById(statusHistoryId);
 
-  if (!statusHistory) throw new NotFoundError('StatusHistory');
-  if (statusHistory.companyId !== companyId) throw new ForbiddenError();
+  if (!statusHistory) {
+    throw new NotFoundError('StatusHistory');
+  }
+  if (statusHistory.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   return statusHistory;
 }

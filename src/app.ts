@@ -23,6 +23,7 @@ import userRoutes from './routes/userRoutes';
 import workScheduleRoutes from './routes/workScheduleRoutes';
 import { errorMiddleware } from './middleware/errorMiddleware';
 import { generalDbRateLimiter } from './middleware/dbRateLimiter';
+import { metricsHandler, metricsMiddleware } from './middleware/metricsMiddleware';
 import type {} from './types/express';
 
 const app = express();
@@ -39,6 +40,9 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'no-referrer');
   next();
 });
+// Before the logger and the rate limiter: a scrape every 15s would flood the logs and RateLimitEntry.
+app.get('/metrics', metricsHandler);
+app.use(metricsMiddleware);
 app.use(
   pinoHttp({
     logger,

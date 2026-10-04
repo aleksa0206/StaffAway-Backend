@@ -160,8 +160,12 @@ export async function updateLeaveRequest(
   }
 ) {
   const leaveRequest = await leaveRequestRepository.findLeaveRequestById(leaveRequestId);
-  if (!leaveRequest) throw new NotFoundError('LeaveRequest');
-  if (leaveRequest.companyId !== companyId) throw new ForbiddenError();
+  if (!leaveRequest) {
+    throw new NotFoundError('LeaveRequest');
+  }
+  if (leaveRequest.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   const isOwner = leaveRequest.userId === changedById;
   if (!isOwner && !isManagerOrHr(changedByRole)) {
@@ -265,8 +269,12 @@ export async function getLeaveRequestById(
   viewer: RequestingUser
 ) {
   const leaveRequest = await leaveRequestRepository.findLeaveRequestById(leaveRequestId);
-  if (!leaveRequest) throw new NotFoundError('LeaveRequest');
-  if (leaveRequest.companyId !== companyId) throw new ForbiddenError();
+  if (!leaveRequest) {
+    throw new NotFoundError('LeaveRequest');
+  }
+  if (leaveRequest.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
   return redactForViewer(leaveRequest, viewer);
 }
 
@@ -350,8 +358,12 @@ export async function deleteLeaveRequest(
   requestingUserRole: string
 ) {
   const leaveRequest = await leaveRequestRepository.findLeaveRequestById(leaveRequestId);
-  if (!leaveRequest) throw new NotFoundError('LeaveRequest');
-  if (leaveRequest.companyId !== companyId) throw new ForbiddenError();
+  if (!leaveRequest) {
+    throw new NotFoundError('LeaveRequest');
+  }
+  if (leaveRequest.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   const isOwner = leaveRequest.userId === requestingUserId;
   if (!isOwner && !isManagerOrHr(requestingUserRole)) {

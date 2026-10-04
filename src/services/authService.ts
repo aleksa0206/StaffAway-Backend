@@ -33,11 +33,9 @@ function generateRefreshToken() {
 }
 
 function signAccessToken(user: { id: number; role: string; companyId: number }) {
-  return jwt.sign(
-    { userId: user.id, role: user.role, companyId: user.companyId },
-    env.JWT_SECRET,
-    { expiresIn: '15m' }
-  );
+  return jwt.sign({ userId: user.id, role: user.role, companyId: user.companyId }, env.JWT_SECRET, {
+    expiresIn: '15m',
+  });
 }
 
 function signTempToken(userId: number) {

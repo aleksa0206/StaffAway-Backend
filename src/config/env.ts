@@ -29,6 +29,9 @@ const envSchema = z.object({
   SMTP_PORT: z.coerce.number().int().positive().default(587),
   SMTP_USER: requiredInProduction(''),
   SMTP_PASS: requiredInProduction(''),
+
+  // Bearer token Prometheus sends to GET /metrics; the endpoint is disabled when unset.
+  METRICS_TOKEN: z.string().min(16).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

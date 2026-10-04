@@ -20,13 +20,19 @@ export async function getAllUsers(
 
 export async function getUserById(userId: number, companyId: number) {
   const user = await userRepository.findById(userId);
-  if (!user) throw new NotFoundError('User');
-  if (user.companyId !== companyId) throw new ForbiddenError();
+  if (!user) {
+    throw new NotFoundError('User');
+  }
+  if (user.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
   return user;
 }
 
 async function assertManagerInSameCompany(managerId: number | null | undefined, companyId: number) {
-  if (managerId === null || managerId === undefined) return;
+  if (managerId === null || managerId === undefined) {
+    return;
+  }
   const manager = await userRepository.findById(managerId);
   if (!manager || manager.companyId !== companyId) {
     throw new ForbiddenError('Manager must belong to the same company');
@@ -37,7 +43,9 @@ async function assertDepartmentInSameCompany(
   departmentId: number | null | undefined,
   companyId: number
 ) {
-  if (departmentId === null || departmentId === undefined) return;
+  if (departmentId === null || departmentId === undefined) {
+    return;
+  }
   const department = await departmentRepository.findDepartmentById(departmentId);
   if (!department || department.companyId !== companyId) {
     throw new ForbiddenError('Department must belong to the same company');
@@ -93,6 +101,7 @@ async function initializeLeaveBalancesForUser(
     leaveTypeRepository.findAllLeaveTypes(companyId, { skip: 0, take: 1000 }),
     companySettingsRepository.findCompanySettingsByCompanyId(companyId),
   ]);
+
   const leaveTypes = leaveTypesResult.data;
 
   const defaultDays = settings?.defaultAnnualLeaveDays ?? 20;
@@ -127,8 +136,12 @@ export async function updateUser(
   requestingUser: { userId: number; companyId: number; role: string }
 ) {
   const existing = await userRepository.findById(targetUserId);
-  if (!existing) throw new NotFoundError('User');
-  if (existing.companyId !== requestingUser.companyId) throw new ForbiddenError();
+  if (!existing) {
+    throw new NotFoundError('User');
+  }
+  if (existing.companyId !== requestingUser.companyId) {
+    throw new ForbiddenError();
+  }
 
   const isSelf = requestingUser.userId === targetUserId;
   const isHr = requestingUser.role === 'Hr';
@@ -171,8 +184,12 @@ export async function deleteUser(
   }
 
   const existing = await userRepository.findById(targetUserId);
-  if (!existing) throw new NotFoundError('User');
-  if (existing.companyId !== requestingUser.companyId) throw new ForbiddenError();
+  if (!existing) {
+    throw new NotFoundError('User');
+  }
+  if (existing.companyId !== requestingUser.companyId) {
+    throw new ForbiddenError();
+  }
 
   const deleted = await userRepository.remove(targetUserId);
 

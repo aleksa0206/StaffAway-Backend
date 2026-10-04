@@ -12,8 +12,12 @@ export async function getAllHolidays(
 export async function getHolidayById(holidayId: number, companyId: number) {
   const holiday = await holidayRepository.findHolidayById(holidayId);
 
-  if (!holiday) throw new NotFoundError('Holiday');
-  if (holiday.companyId !== companyId) throw new ForbiddenError();
+  if (!holiday) {
+    throw new NotFoundError('Holiday');
+  }
+  if (holiday.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   return holiday;
 }
@@ -34,8 +38,12 @@ export async function updateHoliday(
 ) {
   const holiday = await holidayRepository.findHolidayById(holidayId);
 
-  if (!holiday) throw new NotFoundError('Holiday');
-  if (holiday.companyId !== companyId) throw new ForbiddenError();
+  if (!holiday) {
+    throw new NotFoundError('Holiday');
+  }
+  if (holiday.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   return await holidayRepository.updateHoliday(holidayId, data);
 }
@@ -43,8 +51,12 @@ export async function updateHoliday(
 export async function deleteHoliday(holidayId: number, companyId: number) {
   const holiday = await holidayRepository.findHolidayById(holidayId);
 
-  if (!holiday) throw new NotFoundError('Holiday');
-  if (holiday.companyId !== companyId) throw new ForbiddenError();
+  if (!holiday) {
+    throw new NotFoundError('Holiday');
+  }
+  if (holiday.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   return await holidayRepository.removeHoliday(holidayId);
 }

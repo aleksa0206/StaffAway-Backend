@@ -13,8 +13,12 @@ export async function getAllNotifications(
 export async function getNotificationById(notificationId: number, userId: number) {
   const notification = await notificationRepository.findNotificationById(notificationId);
 
-  if (!notification) throw new NotFoundError('Notification');
-  if (notification.userId !== userId) throw new ForbiddenError();
+  if (!notification) {
+    throw new NotFoundError('Notification');
+  }
+  if (notification.userId !== userId) {
+    throw new ForbiddenError();
+  }
 
   return notification;
 }
@@ -30,8 +34,12 @@ export async function updateNotification(
 ) {
   const notification = await notificationRepository.findNotificationById(notificationId);
 
-  if (!notification) throw new NotFoundError('Notification');
-  if (notification.userId !== userId) throw new ForbiddenError();
+  if (!notification) {
+    throw new NotFoundError('Notification');
+  }
+  if (notification.userId !== userId) {
+    throw new ForbiddenError();
+  }
 
   return await notificationRepository.updateNotification(notificationId, data);
 }
@@ -39,8 +47,12 @@ export async function updateNotification(
 export async function deleteNotification(notificationId: number, userId: number) {
   const notification = await notificationRepository.findNotificationById(notificationId);
 
-  if (!notification) throw new NotFoundError('Notification');
-  if (notification.userId !== userId) throw new ForbiddenError();
+  if (!notification) {
+    throw new NotFoundError('Notification');
+  }
+  if (notification.userId !== userId) {
+    throw new ForbiddenError();
+  }
 
   return await notificationRepository.removeNotification(notificationId);
 }

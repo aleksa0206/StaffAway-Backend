@@ -13,8 +13,12 @@ export async function getAllLeaveBalances(
 
 export async function getLeaveBalanceById(leaveBalanceId: number, companyId: number) {
   const leaveBalance = await leaveBalanceRepository.findLeaveBalanceById(leaveBalanceId);
-  if (!leaveBalance) throw new NotFoundError('LeaveBalance');
-  if (leaveBalance.companyId !== companyId) throw new ForbiddenError();
+  if (!leaveBalance) {
+    throw new NotFoundError('LeaveBalance');
+  }
+  if (leaveBalance.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
   return leaveBalance;
 }
 
@@ -40,14 +44,22 @@ export async function updateLeaveBalance(
   data: { totalDays?: number; usedDays?: number }
 ) {
   const leaveBalance = await leaveBalanceRepository.findLeaveBalanceById(leaveBalanceId);
-  if (!leaveBalance) throw new NotFoundError('LeaveBalance');
-  if (leaveBalance.companyId !== companyId) throw new ForbiddenError();
+  if (!leaveBalance) {
+    throw new NotFoundError('LeaveBalance');
+  }
+  if (leaveBalance.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
   return await leaveBalanceRepository.updateLeaveBalance(leaveBalanceId, data);
 }
 
 export async function deleteLeaveBalance(leaveBalanceId: number, companyId: number) {
   const leaveBalance = await leaveBalanceRepository.findLeaveBalanceById(leaveBalanceId);
-  if (!leaveBalance) throw new NotFoundError('LeaveBalance');
-  if (leaveBalance.companyId !== companyId) throw new ForbiddenError();
+  if (!leaveBalance) {
+    throw new NotFoundError('LeaveBalance');
+  }
+  if (leaveBalance.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
   return await leaveBalanceRepository.removeLeaveBalance(leaveBalanceId);
 }

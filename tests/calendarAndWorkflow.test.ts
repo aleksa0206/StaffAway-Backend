@@ -165,15 +165,12 @@ describe('Team calendar and leave workflow', () => {
   it('notifies the manager when a request is submitted', async () => {
     const { employee, manager, annual, auth } = await setup();
 
-    await request(app)
-      .post('/leave-requests')
-      .set('Authorization', auth(employee))
-      .send({
-        startDate: '2027-09-06',
-        endDate: '2027-09-07',
-        totalDays: 2,
-        leaveTypeId: annual.id,
-      });
+    await request(app).post('/leave-requests').set('Authorization', auth(employee)).send({
+      startDate: '2027-09-06',
+      endDate: '2027-09-07',
+      totalDays: 2,
+      leaveTypeId: annual.id,
+    });
 
     const notifications = await prisma.notification.findMany({ where: { userId: manager.id } });
     expect(notifications.map((n) => n.type)).toEqual(['LeaveRequestSubmitted']);

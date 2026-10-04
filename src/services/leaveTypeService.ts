@@ -12,8 +12,12 @@ export async function getAllLeaveTypes(
 export async function getLeaveTypeById(leaveTypeId: number, companyId: number) {
   const leaveType = await leaveTypeRepository.findLeaveTypeById(leaveTypeId);
 
-  if (!leaveType) throw new NotFoundError('LeaveType');
-  if (leaveType.companyId !== companyId) throw new ForbiddenError();
+  if (!leaveType) {
+    throw new NotFoundError('LeaveType');
+  }
+  if (leaveType.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   return leaveType;
 }
@@ -38,8 +42,12 @@ export async function updateLeaveType(
 ) {
   const leaveType = await leaveTypeRepository.findLeaveTypeById(leaveTypeId);
 
-  if (!leaveType) throw new NotFoundError('LeaveType');
-  if (leaveType.companyId !== companyId) throw new ForbiddenError();
+  if (!leaveType) {
+    throw new NotFoundError('LeaveType');
+  }
+  if (leaveType.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   return await leaveTypeRepository.updateLeaveType(leaveTypeId, data);
 }
@@ -47,8 +55,12 @@ export async function updateLeaveType(
 export async function deleteLeaveType(leaveTypeId: number, companyId: number) {
   const leaveType = await leaveTypeRepository.findLeaveTypeById(leaveTypeId);
 
-  if (!leaveType) throw new NotFoundError('LeaveType');
-  if (leaveType.companyId !== companyId) throw new ForbiddenError();
+  if (!leaveType) {
+    throw new NotFoundError('LeaveType');
+  }
+  if (leaveType.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
 
   return await leaveTypeRepository.removeLeaveType(leaveTypeId);
 }
