@@ -55,6 +55,7 @@ npm run dev                     # http://localhost:4000
 | `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | yes | Attachment storage |
 | `FRONTEND_URL` | in production | CORS origin and password-reset links. Default `http://localhost:5173` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | in production | Password-reset emails |
+| `TRUST_PROXY` | no | Number of reverse proxies in front of the app. Default `0`; set it only when a proxy really is there, otherwise clients can spoof their rate-limit IP |
 
 ## Tests
 
@@ -82,3 +83,21 @@ docker run --env-file .env staffaway-migrate npx prisma migrate deploy
 ```
 
 `GET /health` checks the database connection and returns 503 if the database is unreachable.
+
+## Production on a single host
+
+`docker-compose.prod.yaml` runs MySQL, migrations, the API, the frontend (nginx, which also proxies `/api` to the API) and a Cloudflare Tunnel. No ports are published; the tunnel is the only way in. It expects the frontend repo checked out next to this one (`../StaffAway-Frontend`).
+
+1. In Cloudflare Zero Trust, create a tunnel, point a public hostname (e.g. `app.example.com`) at `http://web:80` and copy the tunnel token.
+2. Create `.env.production` (git-ignored) with the variables from the table above, plus `MYSQL_ROOT_PASSWORD` and `TUNNEL_TOKEN`. Set `FRONTEND_URL=https://app.example.com`. Keep `DB_USER`/`DB_PASSWORD`/`DB_NAME` alphanumeric: they are interpolated into a connection URL.
+3. Start the stack and create the first company and Hr user (the platform administrator):
+
+```bash
+docker compose --env-file .env.production -f docker-compose.prod.yaml up -d --build
+docker compose --env-file .env.production -f docker-compose.prod.yaml run --rm \
+  -e ADMIN_EMAIL=you@example.com -e ADMIN_PASSWORD='...' \
+  -e ADMIN_FIRST_NAME=... -e ADMIN_LAST_NAME=... -e COMPANY_NAME='...' \
+  api node dist/scripts/createAdmin.js
+```
+
+Back up the `mysql_data` volume regularly, e.g. `docker compose ... exec mysql mysqldump ...` to another machine.

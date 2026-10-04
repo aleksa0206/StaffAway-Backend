@@ -28,6 +28,9 @@ import type {} from './types/express';
 
 const app = express();
 
+// Behind a proxy every request would otherwise share the proxy's IP and one rate-limit bucket.
+app.set('trust proxy', env.TRUST_PROXY);
+
 app.use(
   cors({
     origin: env.FRONTEND_URL,

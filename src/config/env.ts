@@ -19,6 +19,9 @@ const envSchema = z.object({
 
   JWT_SECRET: z.string().min(32, 'must be at least 32 characters'),
   FRONTEND_URL: requiredInProduction('http://localhost:5173'),
+  // Number of reverse proxies in front of the app (0 = none). With 0, X-Forwarded-For is ignored,
+  // so clients cannot spoof the IP their rate limit is keyed on.
+  TRUST_PROXY: z.coerce.number().int().min(0).default(0),
 
   S3_REGION: z.string().min(1),
   S3_BUCKET: z.string().min(1),
