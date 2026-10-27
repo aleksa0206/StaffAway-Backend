@@ -1,4 +1,4 @@
-import { LeaveType } from '@prisma/client';
+import { LeaveType, Prisma } from '@prisma/client';
 import { prisma } from '../config/prismaClient';
 
 export async function findAllLeaveTypes(
@@ -21,13 +21,16 @@ export async function findLeaveTypeById(leaveTypeId: number): Promise<LeaveType 
   return await prisma.leaveType.findUnique({ where: { id: leaveTypeId } });
 }
 
-export async function createLeaveType(data: {
-  name: string;
-  requiresApproval: boolean;
-  countsTowardBalance: boolean;
-  companyId: number;
-}): Promise<LeaveType> {
-  return await prisma.leaveType.create({ data });
+export async function createLeaveType(
+  data: {
+    name: string;
+    requiresApproval: boolean;
+    countsTowardBalance: boolean;
+    companyId: number;
+  },
+  client: typeof prisma | Prisma.TransactionClient = prisma
+): Promise<LeaveType> {
+  return await client.leaveType.create({ data });
 }
 
 export async function updateLeaveType(

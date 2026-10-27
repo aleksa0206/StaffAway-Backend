@@ -5,10 +5,17 @@ import { TOTP, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib';
 import QRCode from 'qrcode';
 import * as userRepository from '../repositories/userRepository';
 import * as refreshTokenRepository from '../repositories/refreshTokenRepository';
+import * as companyRepository from '../repositories/companyRepository';
+import * as companySettingsRepository from '../repositories/companySettingsRepository';
+import * as leaveTypeRepository from '../repositories/leaveTypeRepository';
+import * as leaveBalanceRepository from '../repositories/leaveBalanceRepository';
+import { prisma } from '../config/prismaClient';
+import { PLATFORM_COMPANY_ID } from '../config/constants';
 import { UnauthorizedError } from '../errors/UnauthorizedError';
 import { LockedError } from '../errors/LockedError';
 import { TwoFactorRequiredError } from '../errors/TwoFactorRequiredError';
 import { ConflictError } from '../errors/ConflictError';
+import { ForbiddenError } from '../errors/ForbiddenError';
 import { getContainer } from '../container';
 import { logger } from '../config/logger';
 import { env } from '../config/env';
@@ -20,6 +27,7 @@ const totp = new TOTP({
 });
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
@@ -111,6 +119,11 @@ export async function login(email: string, password: string) {
     throw new UnauthorizedError('Invalid email or password');
   }
 
+  // Checked only after the password, so it reveals nothing to someone guessing emails.
+  if (!user.emailVerified) {
+    throw new ForbiddenError('Email address is not verified');
+  }
+
   // With 2FA the counter is only cleared after the code, otherwise logging in again would reset
   // the count of wrong codes.
   if (user.twoFactorEnabled) {
@@ -123,6 +136,118 @@ export async function login(email: string, password: string) {
   const { accessToken, refreshToken } = await issueTokensForUser(user);
 
   return { accessToken, refreshToken, user: userRepository.toSafeUser(user) };
+}
+
+// Enough for a new organization to request leave right away; Hr can change them later.
+const DEFAULT_LEAVE_TYPES = [
+  { name: 'Annual leave', requiresApproval: true, countsTowardBalance: true },
+  { name: 'Sick leave', requiresApproval: false, countsTowardBalance: false },
+];
+
+export async function register(input: {
+  companyName: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+}) {
+  // The unique index still decides a race; this only gives the common case a clear message.
+  if (await userRepository.findUserByEmail(input.email)) {
+    throw new ConflictError('An account with this email already exists');
+  }
+
+  const passwordHash = await bcrypt.hash(input.password, 10);
+  const rawToken = crypto.randomBytes(32).toString('hex');
+
+  await prisma.$transaction(async (tx) => {
+    const company = await companyRepository.createCompany({ name: input.companyName }, tx);
+    // On an empty database the first company would get the platform id, and its Hr would manage
+    // every tenant. That company is created by src/scripts/createAdmin.ts, never by sign-up.
+    if (company.id === PLATFORM_COMPANY_ID) {
+      throw new ConflictError('Registration is not available yet');
+    }
+
+    const settings = await companySettingsRepository.createCompanySettings(
+      { companyId: company.id, companyName: company.name },
+      tx
+    );
+    const leaveTypes = [];
+    for (const leaveType of DEFAULT_LEAVE_TYPES) {
+      leaveTypes.push(
+        await leaveTypeRepository.createLeaveType({ ...leaveType, companyId: company.id }, tx)
+      );
+    }
+
+    const hr = await userRepository.create(
+      {
+        firstName: input.firstName,
+        lastName: input.lastName,
+        email: input.email,
+        passwordHash,
+        role: 'Hr',
+        managerId: null,
+        hireDate: new Date(),
+        companyId: company.id,
+        emailVerified: false,
+      },
+      tx
+    );
+    await userRepository.setEmailVerificationToken(
+      hr.id,
+      hashToken(rawToken),
+      new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS),
+      tx
+    );
+
+    for (const leaveType of leaveTypes.filter((lt) => lt.countsTowardBalance)) {
+      await leaveBalanceRepository.createLeaveBalance(
+        {
+          userId: hr.id,
+          leaveTypeId: leaveType.id,
+          companyId: company.id,
+          year: new Date().getFullYear(),
+          totalDays: settings.defaultAnnualLeaveDays,
+          usedDays: 0,
+        },
+        tx
+      );
+    }
+  });
+
+  // After the commit: if sending fails the account still exists and the link can be resent.
+  await getContainer().email.sendVerificationEmail(input.email, rawToken);
+}
+
+export async function verifyEmail(rawToken: string) {
+  const user = await userRepository.findByEmailVerificationTokenHash(hashToken(rawToken));
+
+  if (!user || !user.emailVerificationExpiresAt || user.emailVerificationExpiresAt < new Date()) {
+    throw new UnauthorizedError('Invalid or expired verification link');
+  }
+
+  await userRepository.markEmailVerified(user.id);
+
+  // The link proves the mailbox, so it signs the user in like a login would.
+  const { accessToken, refreshToken } = await issueTokensForUser(user);
+
+  return { accessToken, refreshToken, user: userRepository.toSafeUser(user) };
+}
+
+export async function resendVerificationEmail(email: string) {
+  const user = await userRepository.findUserByEmail(email);
+
+  // Same response whether or not the account exists or is already verified (no enumeration).
+  if (!user || user.emailVerified) {
+    return;
+  }
+
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  await userRepository.setEmailVerificationToken(
+    user.id,
+    hashToken(rawToken),
+    new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS)
+  );
+  await getContainer().email.sendVerificationEmail(user.email, rawToken);
 }
 
 export async function verifyTwoFactorLogin(tempToken: string, code: string) {

@@ -22,6 +22,35 @@ export async function loginHandler(req: Request, res: Response, next: NextFuncti
   }
 }
 
+export async function registerHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { companyName, firstName, lastName, email, password } = req.body;
+    await authService.register({ companyName, firstName, lastName, email, password });
+    res.status(201).json({ message: 'Check your email to activate your account.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function verifyEmailHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { accessToken, refreshToken, user } = await authService.verifyEmail(req.body.token);
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, REFRESH_COOKIE_OPTIONS);
+    res.json({ token: accessToken, user });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function resendVerificationHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    await authService.resendVerificationEmail(req.body.email);
+    res.json({ message: 'If that account still needs confirming, a new link has been sent.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function verifyTwoFactorLoginHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const { tempToken, code } = req.body;

@@ -11,6 +11,21 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+export async function sendVerificationEmail(to: string, verificationToken: string) {
+  const verifyUrl = `${env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+
+  await transporter.sendMail({
+    from: env.SMTP_USER,
+    to,
+    subject: 'Confirm your email - StaffAway',
+    html: `
+      <p>Welcome to StaffAway! Confirm your email address to activate your organization.</p>
+      <p><a href="${verifyUrl}">Click here to confirm your email</a></p>
+      <p>The link expires in 24 hours. If you did not sign up, you can ignore this email.</p>
+    `,
+  });
+}
+
 export async function sendPasswordResetEmail(to: string, resetToken: string) {
   const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 

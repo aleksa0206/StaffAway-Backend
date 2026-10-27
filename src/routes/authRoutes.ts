@@ -1,6 +1,9 @@
 ﻿import { Router } from 'express';
 import {
   loginHandler,
+  registerHandler,
+  verifyEmailHandler,
+  resendVerificationHandler,
   meHandler,
   verifyTwoFactorLoginHandler,
   setupTwoFactorHandler,
@@ -16,6 +19,8 @@ import { authMiddleware } from '../middleware/authMiddleware';
 import { validate } from '../middleware/validate';
 import {
   loginSchema,
+  registerSchema,
+  verifyEmailSchema,
   verifyTwoFactorLoginSchema,
   twoFactorCodeSchema,
   forgotPasswordSchema,
@@ -24,6 +29,20 @@ import {
 
 const router = Router();
 router.post('/auth/login', loginDbRateLimiter, validate(loginSchema), loginHandler);
+// Public: anyone can create an organization and becomes its first Hr.
+router.post('/auth/register', loginDbRateLimiter, validate(registerSchema), registerHandler);
+router.post(
+  '/auth/verify-email',
+  loginDbRateLimiter,
+  validate(verifyEmailSchema),
+  verifyEmailHandler
+);
+router.post(
+  '/auth/resend-verification',
+  loginDbRateLimiter,
+  validate(forgotPasswordSchema),
+  resendVerificationHandler
+);
 router.post(
   '/auth/2fa/verify-login',
   loginDbRateLimiter,

@@ -17,8 +17,11 @@ export async function findCompanyById(companyId: number): Promise<Company | null
   return await prisma.company.findUnique({ where: { id: companyId } });
 }
 
-export async function createCompany(data: { name: string }): Promise<Company> {
-  return await prisma.company.create({ data });
+export async function createCompany(
+  data: { name: string },
+  client: typeof prisma | Prisma.TransactionClient = prisma
+): Promise<Company> {
+  return await client.company.create({ data });
 }
 
 export async function updateCompany(

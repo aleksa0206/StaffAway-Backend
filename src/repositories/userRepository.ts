@@ -86,6 +86,7 @@ export async function create(
     managerId: number | null;
     hireDate: Date;
     companyId: number;
+    emailVerified?: boolean;
   },
   client: PrismaClientOrTx = prisma
 ) {
@@ -207,5 +208,36 @@ export async function findByResetTokenHash(tokenHash: string) {
 }
 
 export async function updatePassword(userId: number, passwordHash: string) {
-  return await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  // The reset link went to this address, which proves it as well as a verification link would.
+  return await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash, emailVerified: true },
+  });
+}
+
+export async function setEmailVerificationToken(
+  userId: number,
+  tokenHash: string,
+  expiresAt: Date,
+  client: PrismaClientOrTx = prisma
+) {
+  return await client.user.update({
+    where: { id: userId },
+    data: { emailVerificationTokenHash: tokenHash, emailVerificationExpiresAt: expiresAt },
+  });
+}
+
+export async function findByEmailVerificationTokenHash(tokenHash: string) {
+  return await prisma.user.findFirst({ where: { emailVerificationTokenHash: tokenHash } });
+}
+
+export async function markEmailVerified(userId: number) {
+  return await prisma.user.update({
+    where: { id: userId },
+    data: {
+      emailVerified: true,
+      emailVerificationTokenHash: null,
+      emailVerificationExpiresAt: null,
+    },
+  });
 }

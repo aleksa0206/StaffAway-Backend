@@ -60,6 +60,10 @@ model User {
   twoFactorSecret  String?
   resetPasswordTokenHash String?
   resetPasswordExpiresAt DateTime?
+  // Only self-registered accounts start unverified; users created by Hr are trusted.
+  emailVerified              Boolean   @default(true)
+  emailVerificationTokenHash String?
+  emailVerificationExpiresAt DateTime?
   hireDate     DateTime
   lockedUntil          DateTime?
   twoFactorEnabled Boolean @default(false)
