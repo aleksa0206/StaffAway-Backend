@@ -1,6 +1,8 @@
 import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 
+const from = env.SMTP_FROM ?? env.SMTP_USER;
+
 const transporter = nodemailer.createTransport({
   host: env.SMTP_HOST,
   port: env.SMTP_PORT,
@@ -15,7 +17,7 @@ export async function sendVerificationEmail(to: string, verificationToken: strin
   const verifyUrl = `${env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
   await transporter.sendMail({
-    from: env.SMTP_USER,
+    from,
     to,
     subject: 'Confirm your email - StaffAway',
     html: `
@@ -30,7 +32,7 @@ export async function sendPasswordResetEmail(to: string, resetToken: string) {
   const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
   await transporter.sendMail({
-    from: env.SMTP_USER,
+    from,
     to,
     subject: 'Password reset - StaffAway',
     html: `

@@ -42,6 +42,16 @@ function generateRefreshToken() {
   return crypto.randomBytes(40).toString('hex');
 }
 
+// A mail outage must not fail the request: the token is already saved and can be resent, and a
+// 500 that only happens for existing accounts would tell anyone which emails are registered.
+async function sendEmailSafely(send: () => Promise<void>) {
+  try {
+    await send();
+  } catch (err) {
+    logger.error({ err }, 'Failed to send email');
+  }
+}
+
 function signAccessToken(user: { id: number; role: string; companyId: number }) {
   return jwt.sign({ userId: user.id, role: user.role, companyId: user.companyId }, env.JWT_SECRET, {
     expiresIn: '15m',
@@ -214,8 +224,8 @@ export async function register(input: {
     }
   });
 
-  // After the commit: if sending fails the account still exists and the link can be resent.
-  await getContainer().email.sendVerificationEmail(input.email, rawToken);
+  // After the commit, so a mail outage leaves a valid account whose link can be resent.
+  await sendEmailSafely(() => getContainer().email.sendVerificationEmail(input.email, rawToken));
 }
 
 export async function verifyEmail(rawToken: string) {
@@ -247,7 +257,7 @@ export async function resendVerificationEmail(email: string) {
     hashToken(rawToken),
     new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS)
   );
-  await getContainer().email.sendVerificationEmail(user.email, rawToken);
+  await sendEmailSafely(() => getContainer().email.sendVerificationEmail(user.email, rawToken));
 }
 
 export async function verifyTwoFactorLogin(tempToken: string, code: string) {
@@ -410,7 +420,7 @@ export async function requestPasswordReset(email: string) {
   const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
 
   await userRepository.setPasswordResetToken(user.id, tokenHash, expiresAt);
-  await getContainer().email.sendPasswordResetEmail(user.email, rawToken);
+  await sendEmailSafely(() => getContainer().email.sendPasswordResetEmail(user.email, rawToken));
 }
 
 export async function resetPassword(rawToken: string, newPassword: string) {

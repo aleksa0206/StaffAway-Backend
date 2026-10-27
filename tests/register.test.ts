@@ -134,6 +134,22 @@ describe('Self-service registration', () => {
     expect(sentTokens).toHaveLength(0);
   });
 
+  it('a failing mail server does not fail sign-up or reveal accounts via forgot-password', async () => {
+    const failing = jest.fn().mockRejectedValue(new Error('getaddrinfo ENOTFOUND CHANGE_ME'));
+    setContainer({
+      email: { sendVerificationEmail: failing, sendPasswordResetEmail: failing } as any,
+    });
+
+    const registerRes = await request(app).post('/auth/register').send(signUp);
+    expect(registerRes.status).toBe(201);
+
+    const forgotRes = await request(app)
+      .post('/auth/forgot-password')
+      .send({ email: signUp.email });
+    expect(forgotRes.status).toBe(200);
+    expect(failing).toHaveBeenCalledTimes(2);
+  });
+
   it('rejects missing fields and short passwords', async () => {
     const res = await request(app)
       .post('/auth/register')

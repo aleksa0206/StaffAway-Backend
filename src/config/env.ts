@@ -32,6 +32,8 @@ const envSchema = z.object({
   SMTP_PORT: z.coerce.number().int().positive().default(587),
   SMTP_USER: requiredInProduction(''),
   SMTP_PASS: requiredInProduction(''),
+  // Sender shown to recipients, e.g. "StaffAway <noreply@example.com>"; defaults to SMTP_USER.
+  SMTP_FROM: z.string().min(1).optional(),
 
   // Bearer token Prometheus sends to GET /metrics; the endpoint is disabled when unset.
   METRICS_TOKEN: z.string().min(16).optional(),
