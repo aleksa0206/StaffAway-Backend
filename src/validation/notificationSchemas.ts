@@ -1,14 +1,6 @@
 import { z } from 'zod';
 
-const notificationType = z.enum([
-  'LeaveRequestSubmitted',
-  'LeaveRequestApproved',
-  'LeaveRequestRejected',
-  'General',
-]);
-
+// The message and type are written by the system; the recipient can only mark it read.
 export const updateNotificationSchema = z.object({
-  message: z.string().min(1).max(1000).optional(),
-  isRead: z.boolean().optional(),
-  type: notificationType.optional(),
+  isRead: z.boolean(),
 });

@@ -40,8 +40,6 @@ enum LeaveStatus {
   Cancelled
 }
 
-
-
 enum NotificationType {
   LeaveRequestSubmitted
   LeaveRequestApproved
@@ -65,6 +63,7 @@ model User {
   hireDate     DateTime
   lockedUntil          DateTime?
   twoFactorEnabled Boolean @default(false)
+  twoFactorLastTimeStep Int?
   role         Role
 
   createdAt DateTime @default(now())

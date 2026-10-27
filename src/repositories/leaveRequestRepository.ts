@@ -128,3 +128,13 @@ export async function lockUserForLeaveRequestWrite(
 ): Promise<void> {
   await client.$queryRaw`SELECT id FROM User WHERE id = ${userId} FOR UPDATE`;
 }
+
+// A locking read always sees the latest committed row, not the transaction's snapshot.
+export async function lockLeaveRequestStatus(
+  leaveRequestId: number,
+  client: Prisma.TransactionClient
+): Promise<LeaveStatus | undefined> {
+  const rows = await client.$queryRaw<{ status: LeaveStatus }[]>`
+    SELECT status FROM LeaveRequest WHERE id = ${leaveRequestId} FOR UPDATE`;
+  return rows[0]?.status;
+}

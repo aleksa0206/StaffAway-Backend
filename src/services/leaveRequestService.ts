@@ -60,9 +60,12 @@ function assertTotalDaysWithinRange(startDate: Date, endDate: Date, totalDays: n
   }
 }
 
+// Callers hold the requester's row lock (lockUserForLeaveRequestWrite), so the balance read here
+// can't change before the update below.
 async function adjustLeaveBalanceOnStatusChange(
   client: Prisma.TransactionClient,
   userId: number,
+  companyId: number,
   leaveTypeId: number,
   totalDays: number,
   year: number,
@@ -81,14 +84,32 @@ async function adjustLeaveBalanceOnStatusChange(
     return;
   }
 
-  const balance = await leaveBalanceRepository.findLeaveBalanceByUserTypeYear(
+  let balance = await leaveBalanceRepository.findLeaveBalanceByUserTypeYear(
     userId,
     leaveTypeId,
     year,
     client
   );
   if (!balance) {
-    throw new NotFoundError('LeaveBalance');
+    // Balances are seeded for the hire year only; a later year starts from the company default.
+    const settings = await companySettingsRepository.findCompanySettingsByCompanyId(companyId);
+    balance = await leaveBalanceRepository.createLeaveBalance(
+      {
+        userId,
+        leaveTypeId,
+        companyId,
+        year,
+        totalDays: settings?.defaultAnnualLeaveDays ?? 20,
+        usedDays: 0,
+      },
+      client
+    );
+  }
+
+  if (isApproved && balance.usedDays + totalDays > balance.totalDays) {
+    throw new ConflictError(
+      `Not enough leave days: ${balance.totalDays - balance.usedDays} left, ${totalDays} requested`
+    );
   }
 
   const delta = isApproved ? totalDays : -totalDays;
@@ -110,6 +131,24 @@ export async function getAllLeaveRequests(
   return { data: data.map((request) => redactForViewer(request, viewer)), total };
 }
 
+async function assertManagesRequester(
+  leaveRequest: { userId: number },
+  actorId: number,
+  actorRole: string,
+  message: string
+) {
+  if (actorRole === 'Hr') {
+    return;
+  }
+  if (actorRole === 'Manager') {
+    const requester = await userRepository.findById(leaveRequest.userId);
+    if (requester?.managerId === actorId) {
+      return;
+    }
+  }
+  throw new ForbiddenError(message);
+}
+
 async function assertCanDecide(
   leaveRequest: { userId: number },
   deciderId: number,
@@ -121,14 +160,12 @@ async function assertCanDecide(
   if (leaveRequest.userId === deciderId) {
     throw new ForbiddenError('You cannot decide on your own leave request');
   }
-  if (deciderRole === 'Manager') {
-    const requester = await userRepository.findById(leaveRequest.userId);
-    if (requester?.managerId !== deciderId) {
-      throw new ForbiddenError(
-        'Managers can only decide on leave requests of their direct reports'
-      );
-    }
-  }
+  await assertManagesRequester(
+    leaveRequest,
+    deciderId,
+    deciderRole,
+    'Managers can only decide on leave requests of their direct reports'
+  );
 }
 
 function assertCanCancel(
@@ -167,9 +204,13 @@ export async function updateLeaveRequest(
     throw new ForbiddenError();
   }
 
-  const isOwner = leaveRequest.userId === changedById;
-  if (!isOwner && !isManagerOrHr(changedByRole)) {
-    throw new ForbiddenError('You can only update your own leave requests');
+  if (leaveRequest.userId !== changedById) {
+    await assertManagesRequester(
+      leaveRequest,
+      changedById,
+      changedByRole,
+      'You can only update your own leave requests or those of your direct reports'
+    );
   }
 
   const editsDetails =
@@ -204,8 +245,16 @@ export async function updateLeaveRequest(
   }
 
   return await prisma.$transaction(async (tx) => {
+    // Lock first: everything this transaction reads about the requester comes after the lock.
+    await leaveRequestRepository.lockUserForLeaveRequestWrite(leaveRequest.userId, tx);
+    // The checks above used a read from before the lock; two managers approving at once would
+    // both have seen Pending and counted the days twice.
+    const currentStatus = await leaveRequestRepository.lockLeaveRequestStatus(leaveRequestId, tx);
+    if (currentStatus !== oldStatus) {
+      throw new ConflictError('Leave request was changed in the meantime, reload and try again');
+    }
+
     if (data.startDate || data.endDate) {
-      await leaveRequestRepository.lockUserForLeaveRequestWrite(leaveRequest.userId, tx);
       await assertNoOverlap(
         leaveRequest.userId,
         effectiveStartDate,
@@ -219,6 +268,7 @@ export async function updateLeaveRequest(
       await adjustLeaveBalanceOnStatusChange(
         tx,
         leaveRequest.userId,
+        companyId,
         leaveRequest.leaveTypeId,
         effectiveTotalDays,
         effectiveStartDate.getUTCFullYear(),
@@ -321,6 +371,7 @@ export async function createLeaveRequest(data: {
       await adjustLeaveBalanceOnStatusChange(
         tx,
         data.userId,
+        data.companyId,
         data.leaveTypeId,
         data.totalDays,
         data.startDate.getUTCFullYear(),
@@ -365,9 +416,13 @@ export async function deleteLeaveRequest(
     throw new ForbiddenError();
   }
 
-  const isOwner = leaveRequest.userId === requestingUserId;
-  if (!isOwner && !isManagerOrHr(requestingUserRole)) {
-    throw new ForbiddenError('You can only delete your own leave requests');
+  if (leaveRequest.userId !== requestingUserId) {
+    await assertManagesRequester(
+      leaveRequest,
+      requestingUserId,
+      requestingUserRole,
+      'You can only delete your own leave requests or those of your direct reports'
+    );
   }
   if (leaveRequest.status !== 'Pending') {
     throw new ConflictError('Only pending leave requests can be deleted');

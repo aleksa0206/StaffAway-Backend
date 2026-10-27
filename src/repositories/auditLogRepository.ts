@@ -1,4 +1,4 @@
-import { AuditLog } from '@prisma/client';
+import { AuditLog, Prisma } from '@prisma/client';
 import { prisma } from '../config/prismaClient';
 
 export async function findAllAuditLogs(
@@ -22,16 +22,19 @@ export async function findAuditLogById(auditLogId: number): Promise<AuditLog | n
   return await prisma.auditLog.findUnique({ where: { id: auditLogId } });
 }
 
-export async function createAuditLog(data: {
-  entityType: string;
-  entityId: number;
-  action: string;
-  performedById: number;
-  companyId: number;
-  oldValue?: string;
-  newValue?: string;
-}): Promise<AuditLog> {
-  return await prisma.auditLog.create({ data });
+export async function createAuditLog(
+  data: {
+    entityType: string;
+    entityId: number;
+    action: string;
+    performedById: number;
+    companyId: number;
+    oldValue?: string;
+    newValue?: string;
+  },
+  client: typeof prisma | Prisma.TransactionClient = prisma
+): Promise<AuditLog> {
+  return await client.auditLog.create({ data });
 }
 
 export async function removeAuditLog(auditLogId: number): Promise<AuditLog> {

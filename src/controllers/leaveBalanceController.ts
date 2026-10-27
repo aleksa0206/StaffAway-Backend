@@ -7,6 +7,7 @@ export async function getAllLeaveBalancesHandler(req: Request, res: Response, ne
   try {
     const pagination = parsePagination(req);
     const { data, total } = await leaveBalanceService.getAllLeaveBalances(
+      { userId: req.user!.userId, role: req.user!.role },
       req.user!.companyId,
       {
         // `userId` (single) stays for existing clients; `userIds` lets a list page load balances in one call.
@@ -28,7 +29,8 @@ export async function getLeaveBalanceByIdHandler(req: Request, res: Response, ne
     const leaveBalanceId = Number(req.params.leaveBalanceId);
     const leaveBalance = await leaveBalanceService.getLeaveBalanceById(
       leaveBalanceId,
-      req.user!.companyId
+      req.user!.companyId,
+      { userId: req.user!.userId, role: req.user!.role }
     );
     res.json(leaveBalance);
   } catch (err) {

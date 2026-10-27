@@ -57,11 +57,16 @@ describe('Security fixes', () => {
     expect(res.status).toBe(403);
   });
 
-  it("Attachment: an Employee cannot view a colleague's attachment in the same company, a Manager can", async () => {
+  it("Attachment: an Employee cannot view a colleague's attachment in the same company, the owner's Manager can", async () => {
     const company = await createTestCompany();
-    const { user: owner } = await createTestUser({ companyId: company.id, role: 'Employee' });
-    const { user: colleague } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const { user: manager } = await createTestUser({ companyId: company.id, role: 'Manager' });
+    const { user: otherManager } = await createTestUser({ companyId: company.id, role: 'Manager' });
+    const { user: owner } = await createTestUser({
+      companyId: company.id,
+      role: 'Employee',
+      managerId: manager.id,
+    });
+    const { user: colleague } = await createTestUser({ companyId: company.id, role: 'Employee' });
     const leaveType = await createTestLeaveType(company.id);
     const leaveRequest = await createRawLeaveRequest({
       userId: owner.id,
@@ -86,6 +91,14 @@ describe('Security fixes', () => {
       .get(`/attachments/${attachment.id}`)
       .set('Authorization', `Bearer ${managerToken}`);
     expect(managerRes.status).toBe(200);
+
+    const otherManagerRes = await request(app)
+      .get(`/attachments/${attachment.id}`)
+      .set(
+        'Authorization',
+        `Bearer ${tokenFor({ id: otherManager.id, role: otherManager.role, companyId: company.id })}`
+      );
+    expect(otherManagerRes.status).toBe(403);
   });
 
   it("LeaveRequest: an Employee cannot delete someone else's request, but can delete their own", async () => {

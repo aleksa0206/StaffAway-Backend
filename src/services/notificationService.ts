@@ -26,11 +26,7 @@ export async function getNotificationById(notificationId: number, userId: number
 export async function updateNotification(
   notificationId: number,
   userId: number,
-  data: {
-    message?: string;
-    isRead?: boolean;
-    type?: 'LeaveRequestSubmitted' | 'LeaveRequestApproved' | 'LeaveRequestRejected' | 'General';
-  }
+  data: { isRead: boolean }
 ) {
   const notification = await notificationRepository.findNotificationById(notificationId);
 

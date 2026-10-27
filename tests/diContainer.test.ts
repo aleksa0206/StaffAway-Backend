@@ -43,7 +43,7 @@ describe('DI container - attachmentService uses a swappable fileStorage', () => 
     await attachmentService.createAttachment(
       {
         leaveRequestId: 1,
-        fileBuffer: Buffer.from('x'),
+        fileBuffer: Buffer.from('%PDF-x'),
         originalFileName: 'test.pdf',
         mimeType: 'application/pdf',
       },
@@ -51,7 +51,11 @@ describe('DI container - attachmentService uses a swappable fileStorage', () => 
     );
 
     expect(mockUploadFile).toHaveBeenCalledTimes(1);
-    expect(mockUploadFile).toHaveBeenCalledWith(Buffer.from('x'), 'test.pdf', 'application/pdf');
+    expect(mockUploadFile).toHaveBeenCalledWith(
+      Buffer.from('%PDF-x'),
+      'test.pdf',
+      'application/pdf'
+    );
   });
 
   it('throws NotFoundError when the leaveRequest does not exist, without calling fileStorage', async () => {
@@ -70,7 +74,7 @@ describe('DI container - attachmentService uses a swappable fileStorage', () => 
       attachmentService.createAttachment(
         {
           leaveRequestId: 999,
-          fileBuffer: Buffer.from('x'),
+          fileBuffer: Buffer.from('%PDF-x'),
           originalFileName: 'test.pdf',
           mimeType: 'application/pdf',
         },

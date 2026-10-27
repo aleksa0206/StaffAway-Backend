@@ -8,6 +8,7 @@ import * as refreshTokenRepository from '../repositories/refreshTokenRepository'
 import { UnauthorizedError } from '../errors/UnauthorizedError';
 import { LockedError } from '../errors/LockedError';
 import { TwoFactorRequiredError } from '../errors/TwoFactorRequiredError';
+import { ConflictError } from '../errors/ConflictError';
 import { getContainer } from '../container';
 import { logger } from '../config/logger';
 import { env } from '../config/env';
@@ -23,6 +24,7 @@ const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 const TEMP_TOKEN_TTL = '5m';
+const REFRESH_REUSE_GRACE_MS = 60 * 1000;
 
 function hashToken(token: string) {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -59,6 +61,38 @@ async function issueTokensForUser(user: { id: number; role: string; companyId: n
 
 const DUMMY_PASSWORD_HASH = '$2b$10$C6UzMDM.H6dfI/f/IKcEeO5cLDl6h.HOOrGqW9dR1MXwLXVWfHbf.';
 
+function assertNotLocked(user: { lockedUntil: Date | null }) {
+  if (user.lockedUntil && user.lockedUntil > new Date()) {
+    throw new LockedError('Account is temporarily locked due to too many failed login attempts');
+  }
+}
+
+// Wrong passwords and wrong 2FA codes share one counter, so neither can be guessed indefinitely.
+async function registerFailedAttempt(user: { id: number; failedLoginAttempts: number }) {
+  const attemptsAfterThis = user.failedLoginAttempts + 1;
+
+  if (attemptsAfterThis >= MAX_FAILED_LOGIN_ATTEMPTS) {
+    await userRepository.setAccountLock(user.id, new Date(Date.now() + LOCKOUT_DURATION_MS), 0);
+    logger.warn({ userId: user.id }, 'Account locked after too many failed login attempts');
+    throw new LockedError(
+      'Account locked due to too many failed login attempts. Try again in 15 minutes.'
+    );
+  }
+
+  await userRepository.incrementFailedLoginAttempts(user.id);
+  logger.warn({ userId: user.id, attempt: attemptsAfterThis }, 'Failed login attempt');
+}
+
+async function clearFailedAttempts(user: {
+  id: number;
+  failedLoginAttempts: number;
+  lockedUntil: Date | null;
+}) {
+  if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+    await userRepository.setAccountLock(user.id, null, 0);
+  }
+}
+
 export async function login(email: string, password: string) {
   const user = await userRepository.findUserByEmail(email);
 
@@ -68,36 +102,23 @@ export async function login(email: string, password: string) {
     throw new UnauthorizedError('Invalid email or password');
   }
 
-  if (user.lockedUntil && user.lockedUntil > new Date()) {
-    throw new LockedError('Account is temporarily locked due to too many failed login attempts');
-  }
+  assertNotLocked(user);
 
   const passwordMatches = await bcrypt.compare(password, user.passwordHash);
 
   if (!passwordMatches) {
-    const attemptsAfterThis = user.failedLoginAttempts + 1;
-
-    if (attemptsAfterThis >= MAX_FAILED_LOGIN_ATTEMPTS) {
-      await userRepository.setAccountLock(user.id, new Date(Date.now() + LOCKOUT_DURATION_MS), 0);
-      logger.warn({ userId: user.id }, 'Account locked after too many failed login attempts');
-      throw new LockedError(
-        'Account locked due to too many failed login attempts. Try again in 15 minutes.'
-      );
-    }
-
-    await userRepository.incrementFailedLoginAttempts(user.id);
-    logger.warn({ userId: user.id, attempt: attemptsAfterThis }, 'Failed login attempt');
+    await registerFailedAttempt(user);
     throw new UnauthorizedError('Invalid email or password');
   }
 
-  if (user.failedLoginAttempts > 0 || user.lockedUntil) {
-    await userRepository.setAccountLock(user.id, null, 0);
-  }
-
+  // With 2FA the counter is only cleared after the code, otherwise logging in again would reset
+  // the count of wrong codes.
   if (user.twoFactorEnabled) {
     const tempToken = signTempToken(user.id);
     throw new TwoFactorRequiredError(tempToken);
   }
+
+  await clearFailedAttempts(user);
 
   const { accessToken, refreshToken } = await issueTokensForUser(user);
 
@@ -124,10 +145,19 @@ export async function verifyTwoFactorLogin(tempToken: string, code: string) {
     throw new UnauthorizedError('Two-factor authentication is not enabled for this account');
   }
 
+  assertNotLocked(user);
+
   const result = await totp.verify(code, { secret: user.twoFactorSecret });
   if (!result.valid) {
+    await registerFailedAttempt(user);
     throw new UnauthorizedError('Invalid two-factor code');
   }
+  // A code stays valid for its whole 30s window; it must not log in a second time.
+  if (!(await userRepository.consumeTwoFactorTimeStep(user.id, result.timeStep))) {
+    throw new UnauthorizedError('Invalid two-factor code');
+  }
+
+  await clearFailedAttempts(user);
 
   const { accessToken, refreshToken } = await issueTokensForUser(user);
 
@@ -146,6 +176,11 @@ export async function setupTwoFactor(userId: number) {
   const user = await userRepository.findByIdWithAuthFields(userId);
   if (!user) {
     throw new UnauthorizedError('User not found');
+  }
+  // Replacing the secret of an enabled 2FA would let anyone holding a session take it over;
+  // disabling first requires a valid code.
+  if (user.twoFactorEnabled) {
+    throw new ConflictError('Two-factor authentication is already enabled');
   }
 
   const secret = totp.generateSecret();
@@ -188,7 +223,19 @@ export async function refresh(oldRefreshToken: string) {
   const hashed = hashToken(oldRefreshToken);
   const existing = await refreshTokenRepository.findRefreshTokenByTokenHash(hashed);
 
-  if (!existing || existing.revoked || existing.expiresAt < new Date()) {
+  if (!existing || existing.expiresAt < new Date()) {
+    throw new UnauthorizedError('Invalid or expired refresh token');
+  }
+  if (existing.revoked) {
+    // An old token coming back means it was copied: end every session of that user. The grace
+    // period covers two tabs refreshing with the same cookie at the same moment.
+    if (existing.updatedAt.getTime() < Date.now() - REFRESH_REUSE_GRACE_MS) {
+      await refreshTokenRepository.revokeAllForUser(existing.userId);
+      logger.warn(
+        { userId: existing.userId },
+        'Refresh token reuse detected, all sessions revoked'
+      );
+    }
     throw new UnauthorizedError('Invalid or expired refresh token');
   }
 

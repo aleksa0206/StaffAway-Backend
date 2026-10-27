@@ -29,6 +29,20 @@ export async function getUserById(userId: number, companyId: number) {
   return user;
 }
 
+// Whose personal records (balances, attachments) a viewer may see; undefined means the whole company.
+export async function visibleUserIdsFor(viewer: {
+  userId: number;
+  role: string;
+}): Promise<number[] | undefined> {
+  if (viewer.role === 'Hr') {
+    return undefined;
+  }
+  if (viewer.role === 'Manager') {
+    return [viewer.userId, ...(await userRepository.findDirectReportIds(viewer.userId))];
+  }
+  return [viewer.userId];
+}
+
 async function assertManagerInSameCompany(managerId: number | null | undefined, companyId: number) {
   if (managerId === null || managerId === undefined) {
     return;
@@ -152,25 +166,39 @@ export async function updateUser(
   if (!isHr && data.role !== undefined) {
     throw new ForbiddenError('Only Hr can change roles');
   }
+  // Choosing your own approver is Hr's call. Compared to the stored values because clients may
+  // send the whole form back unchanged.
+  const changesOrgFields =
+    (data.managerId !== undefined && data.managerId !== existing.managerId) ||
+    (data.departmentId !== undefined && data.departmentId !== existing.departmentId) ||
+    (data.hireDate !== undefined && data.hireDate.getTime() !== existing.hireDate.getTime());
+  if (!isHr && changesOrgFields) {
+    throw new ForbiddenError('Only Hr can change manager, department or hire date');
+  }
 
   await assertManagerInSameCompany(data.managerId, requestingUser.companyId);
   await assertDepartmentInSameCompany(data.departmentId, requestingUser.companyId);
 
-  const updated = await userRepository.update(targetUserId, data);
+  return await prisma.$transaction(async (tx) => {
+    const updated = await userRepository.update(targetUserId, data, tx);
 
-  if (data.role !== undefined && data.role !== existing.role) {
-    await auditLogRepository.createAuditLog({
-      performedById: requestingUser.userId,
-      entityId: targetUserId,
-      entityType: 'User',
-      action: 'ROLE_CHANGE',
-      oldValue: existing.role,
-      newValue: data.role,
-      companyId: requestingUser.companyId,
-    });
-  }
+    if (data.role !== undefined && data.role !== existing.role) {
+      await auditLogRepository.createAuditLog(
+        {
+          performedById: requestingUser.userId,
+          entityId: targetUserId,
+          entityType: 'User',
+          action: 'ROLE_CHANGE',
+          oldValue: existing.role,
+          newValue: data.role,
+          companyId: requestingUser.companyId,
+        },
+        tx
+      );
+    }
 
-  return updated;
+    return updated;
+  });
 }
 export async function deleteUser(
   targetUserId: number,
@@ -191,16 +219,21 @@ export async function deleteUser(
     throw new ForbiddenError();
   }
 
-  const deleted = await userRepository.remove(targetUserId);
+  return await prisma.$transaction(async (tx) => {
+    const deleted = await userRepository.remove(targetUserId, tx);
 
-  await auditLogRepository.createAuditLog({
-    performedById: requestingUser.userId,
-    entityId: targetUserId,
-    entityType: 'User',
-    action: 'DELETE_USER',
-    oldValue: `${existing.firstName} ${existing.lastName} (${existing.email})`,
-    companyId: requestingUser.companyId,
+    await auditLogRepository.createAuditLog(
+      {
+        performedById: requestingUser.userId,
+        entityId: targetUserId,
+        entityType: 'User',
+        action: 'DELETE_USER',
+        oldValue: `${existing.firstName} ${existing.lastName} (${existing.email})`,
+        companyId: requestingUser.companyId,
+      },
+      tx
+    );
+
+    return deleted;
   });
-
-  return deleted;
 }

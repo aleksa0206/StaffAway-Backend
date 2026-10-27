@@ -3,6 +3,7 @@ import * as auditLogRepository from '../repositories/auditLogRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
 import { PLATFORM_COMPANY_ID } from '../config/constants';
+import { prisma } from '../config/prismaClient';
 
 function assertPlatformAdmin(companyId: number, role: string) {
   if (companyId !== PLATFORM_COMPANY_ID || role !== 'Hr') {
@@ -51,21 +52,26 @@ export async function updateOwnCompany(
     throw new NotFoundError('Company');
   }
 
-  const updated = await companyRepository.updateCompany(companyId, data);
+  return await prisma.$transaction(async (tx) => {
+    const updated = await companyRepository.updateCompany(companyId, data, tx);
 
-  if (data.name !== undefined && data.name !== existing.name) {
-    await auditLogRepository.createAuditLog({
-      performedById,
-      entityId: companyId,
-      entityType: 'Company',
-      action: 'UPDATE_COMPANY_NAME',
-      oldValue: existing.name,
-      newValue: data.name,
-      companyId,
-    });
-  }
+    if (data.name !== undefined && data.name !== existing.name) {
+      await auditLogRepository.createAuditLog(
+        {
+          performedById,
+          entityId: companyId,
+          entityType: 'Company',
+          action: 'UPDATE_COMPANY_NAME',
+          oldValue: existing.name,
+          newValue: data.name,
+          companyId,
+        },
+        tx
+      );
+    }
 
-  return updated;
+    return updated;
+  });
 }
 
 export async function deleteOwnCompany(companyId: number, role: string, performedById: number) {

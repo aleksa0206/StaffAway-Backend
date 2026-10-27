@@ -4,12 +4,15 @@ import { compact } from '../utils/queryParams';
 
 export async function findAllAttachmentsByCompany(
   companyId: number,
-  filters: { leaveRequestId?: number | undefined; ownerUserId?: number | undefined },
+  filters: { leaveRequestId?: number | undefined; ownerUserIds?: number[] | undefined },
   pagination: { skip: number; take: number }
 ) {
   const where = compact({
     leaveRequestId: filters.leaveRequestId,
-    leaveRequest: compact({ companyId, userId: filters.ownerUserId }),
+    leaveRequest: compact({
+      companyId,
+      userId: filters.ownerUserIds ? { in: filters.ownerUserIds } : undefined,
+    }),
   });
   const [data, total] = await Promise.all([
     prisma.attachment.findMany({

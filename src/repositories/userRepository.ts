@@ -102,17 +102,18 @@ export async function update(
     managerId: number | null;
     departmentId: number | null;
     hireDate: Date;
-  }>
+  }>,
+  client: PrismaClientOrTx = prisma
 ) {
-  return await prisma.user.update({
+  return await client.user.update({
     where: { id: userId },
     data,
     select: userSafeSelect,
   });
 }
 
-export async function remove(userId: number) {
-  return await prisma.user.delete({
+export async function remove(userId: number, client: PrismaClientOrTx = prisma) {
+  return await client.user.delete({
     where: { id: userId },
     select: userSafeSelect,
   });
@@ -165,8 +166,25 @@ export async function enableTwoFactor(userId: number) {
 export async function disableTwoFactor(userId: number) {
   return await prisma.user.update({
     where: { id: userId },
-    data: { twoFactorEnabled: false, twoFactorSecret: null },
+    data: { twoFactorEnabled: false, twoFactorSecret: null, twoFactorLastTimeStep: null },
   });
+}
+
+// Guarded like refresh-token rotation: two concurrent logins with the same code can't both win.
+export async function consumeTwoFactorTimeStep(userId: number, timeStep: number) {
+  const result = await prisma.user.updateMany({
+    where: {
+      id: userId,
+      OR: [{ twoFactorLastTimeStep: null }, { twoFactorLastTimeStep: { lt: timeStep } }],
+    },
+    data: { twoFactorLastTimeStep: timeStep },
+  });
+  return result.count === 1;
+}
+
+export async function findDirectReportIds(managerId: number) {
+  const reports = await prisma.user.findMany({ where: { managerId }, select: { id: true } });
+  return reports.map((report) => report.id);
 }
 
 export async function findByIdWithAuthFields(userId: number) {

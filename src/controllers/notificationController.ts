@@ -33,11 +33,9 @@ export async function getNotificationByIdHandler(req: Request, res: Response, ne
 export async function updateNotificationHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const notificationId = Number(req.params.notificationId);
-    const { message, isRead, type } = req.body;
+    const { isRead } = req.body;
     const updated = await notificationService.updateNotification(notificationId, req.user!.userId, {
-      message,
       isRead,
-      type,
     });
     res.json(updated);
   } catch (err) {

@@ -1,4 +1,4 @@
-import { Company } from '@prisma/client';
+import { Company, Prisma } from '@prisma/client';
 import { prisma } from '../config/prismaClient';
 
 export async function findAllCompanies(pagination: { skip: number; take: number }) {
@@ -25,9 +25,10 @@ export async function updateCompany(
   companyId: number,
   data: {
     name?: string;
-  }
+  },
+  client: typeof prisma | Prisma.TransactionClient = prisma
 ): Promise<Company> {
-  return await prisma.company.update({ where: { id: companyId }, data });
+  return await client.company.update({ where: { id: companyId }, data });
 }
 
 export async function removeCompany(companyId: number): Promise<Company> {

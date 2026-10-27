@@ -2,21 +2,42 @@ import * as leaveBalanceRepository from '../repositories/leaveBalanceRepository'
 import * as userRepository from '../repositories/userRepository';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
+import { visibleUserIdsFor } from './userService';
+
+// Employees see their own balances, managers also their direct reports', Hr everyone's.
+type Viewer = { userId: number; role: string };
 
 export async function getAllLeaveBalances(
+  viewer: Viewer,
   companyId: number,
   filters: { userIds?: number[] | undefined; year?: number | undefined },
   pagination: { skip: number; take: number }
 ) {
-  return await leaveBalanceRepository.findAllLeaveBalances(companyId, filters, pagination);
+  const visibleUserIds = await visibleUserIdsFor(viewer);
+  const userIds = visibleUserIds
+    ? (filters.userIds ?? visibleUserIds).filter((id) => visibleUserIds.includes(id))
+    : filters.userIds;
+  return await leaveBalanceRepository.findAllLeaveBalances(
+    companyId,
+    { ...filters, userIds },
+    pagination
+  );
 }
 
-export async function getLeaveBalanceById(leaveBalanceId: number, companyId: number) {
+export async function getLeaveBalanceById(
+  leaveBalanceId: number,
+  companyId: number,
+  viewer: Viewer
+) {
   const leaveBalance = await leaveBalanceRepository.findLeaveBalanceById(leaveBalanceId);
   if (!leaveBalance) {
     throw new NotFoundError('LeaveBalance');
   }
   if (leaveBalance.companyId !== companyId) {
+    throw new ForbiddenError();
+  }
+  const visibleUserIds = await visibleUserIdsFor(viewer);
+  if (visibleUserIds && !visibleUserIds.includes(leaveBalance.userId)) {
     throw new ForbiddenError();
   }
   return leaveBalance;

@@ -1,13 +1,39 @@
 import * as attachmentRepository from '../repositories/attachmentRepository';
 import * as leaveRequestRepository from '../repositories/leaveRequestRepository';
+import { visibleUserIdsFor } from './userService';
 import { NotFoundError } from '../errors/NotFoundError';
 import { ForbiddenError } from '../errors/ForbiddenError';
+import { ValidationError } from '../errors/ValidationError';
 import { getContainer } from '../container';
+import { logger } from '../config/logger';
 
 type RequestingUser = { companyId: number; userId: number; role: string };
 
-function isPrivileged(role: string) {
-  return role === 'Manager' || role === 'Hr';
+// The MIME type is whatever the client claims; the first bytes of the file are what it really is.
+const FILE_SIGNATURES: Record<string, number[]> = {
+  'application/pdf': [0x25, 0x50, 0x44, 0x46], // %PDF
+  'image/png': [0x89, 0x50, 0x4e, 0x47],
+  'image/jpeg': [0xff, 0xd8, 0xff],
+};
+
+function assertContentMatchesType(buffer: Buffer, mimeType: string) {
+  const signature = FILE_SIGNATURES[mimeType];
+  if (!signature || !signature.every((byte, i) => buffer[i] === byte)) {
+    throw new ValidationError('File content does not match its type');
+  }
+}
+
+async function assertCanAccess(
+  leaveRequest: { companyId: number; userId: number } | null | undefined,
+  requestingUser: RequestingUser
+) {
+  if (leaveRequest?.companyId !== requestingUser.companyId) {
+    throw new ForbiddenError();
+  }
+  const visibleUserIds = await visibleUserIdsFor(requestingUser);
+  if (visibleUserIds && !visibleUserIds.includes(leaveRequest.userId)) {
+    throw new ForbiddenError();
+  }
 }
 
 export async function getAllAttachments(
@@ -19,7 +45,7 @@ export async function getAllAttachments(
     requestingUser.companyId,
     {
       leaveRequestId: filters.leaveRequestId,
-      ownerUserId: isPrivileged(requestingUser.role) ? undefined : requestingUser.userId,
+      ownerUserIds: await visibleUserIdsFor(requestingUser),
     },
     pagination
   );
@@ -31,15 +57,7 @@ export async function getAttachmentById(attachmentId: number, requestingUser: Re
   if (!attachment) {
     throw new NotFoundError('Attachment');
   }
-  if (attachment.leaveRequest?.companyId !== requestingUser.companyId) {
-    throw new ForbiddenError();
-  }
-  if (
-    !isPrivileged(requestingUser.role) &&
-    attachment.leaveRequest?.userId !== requestingUser.userId
-  ) {
-    throw new ForbiddenError();
-  }
+  await assertCanAccess(attachment.leaveRequest, requestingUser);
 
   return attachment;
 }
@@ -55,12 +73,8 @@ export async function createAttachment(
   if (!leaveRequest) {
     throw new NotFoundError('LeaveRequest');
   }
-  if (leaveRequest.companyId !== requestingUser.companyId) {
-    throw new ForbiddenError('Cannot attach file to a leave request outside your company');
-  }
-  if (!isPrivileged(requestingUser.role) && leaveRequest.userId !== requestingUser.userId) {
-    throw new ForbiddenError('You can only attach files to your own leave requests');
-  }
+  await assertCanAccess(leaveRequest, requestingUser);
+  assertContentMatchesType(data.fileBuffer, data.mimeType);
 
   const key = await fileStorage.uploadFile(data.fileBuffer, data.originalFileName, data.mimeType);
 
@@ -79,19 +93,17 @@ export async function deleteAttachment(attachmentId: number, requestingUser: Req
   if (!attachment) {
     throw new NotFoundError('Attachment');
   }
-  if (attachment.leaveRequest?.companyId !== requestingUser.companyId) {
-    throw new ForbiddenError();
-  }
-  if (
-    !isPrivileged(requestingUser.role) &&
-    attachment.leaveRequest?.userId !== requestingUser.userId
-  ) {
-    throw new ForbiddenError();
+  await assertCanAccess(attachment.leaveRequest, requestingUser);
+
+  // Row first: if S3 then fails, an orphaned file is harmless, a row pointing at nothing is not.
+  const deleted = await attachmentRepository.removeAttachment(attachmentId);
+  try {
+    await fileStorage.deleteFile(attachment.filePath);
+  } catch (err) {
+    logger.error({ err, key: attachment.filePath }, 'Failed to delete attachment file from S3');
   }
 
-  await fileStorage.deleteFile(attachment.filePath);
-
-  return await attachmentRepository.removeAttachment(attachmentId);
+  return deleted;
 }
 
 export async function toResponseShape(attachment: {

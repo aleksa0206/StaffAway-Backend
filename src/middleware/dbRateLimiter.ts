@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as rateLimitRepository from '../repositories/rateLimitRepository';
+import { logger } from '../config/logger';
 
 export function dbRateLimit(options: {
   name: string;
@@ -19,6 +20,8 @@ export function dbRateLimit(options: {
 
       next();
     } catch (err) {
+      // Fail open: a database hiccup shouldn't take the API down, but it must not go unnoticed.
+      logger.error({ err, limiter: options.name }, 'Rate limiter failed, request let through');
       next();
     }
   };

@@ -3,7 +3,10 @@
     return 'MOCKSECRET';
   }
   async verify(token: string, _options?: any) {
-    return { valid: token === '123456' };
+    if (token !== '123456') {
+      return { valid: false };
+    }
+    return { valid: true, delta: 0, timeStep: Math.floor(Date.now() / 30000) };
   }
   toURI(_options?: any) {
     return 'otpauth://totp/mock';
