@@ -1,42 +1,47 @@
-import { AuditLog, Prisma } from '@prisma/client';
+import type { AuditLog, Prisma } from '@prisma/client';
 import { prisma } from '../config/prismaClient';
+import type { NewAuditLogEntry } from '../types/auditLog';
+
+type PrismaClientOrTx = typeof prisma | Prisma.TransactionClient;
+
+const withPerformedByName = {
+  performedBy: { select: { id: true, firstName: true, lastName: true } },
+} satisfies Prisma.AuditLogInclude;
 
 export async function findAllAuditLogs(
   companyId: number,
   pagination: { skip: number; take: number }
 ) {
-  const [data, total] = await Promise.all([
-    prisma.auditLog.findMany({
-      where: { companyId },
-      include: { performedBy: { select: { id: true, firstName: true, lastName: true } } },
-      orderBy: { createdAt: 'desc' },
-      skip: pagination.skip,
-      take: pagination.take,
-    }),
-    prisma.auditLog.count({ where: { companyId } }),
+  const findAuditLogsOnPage = prisma.auditLog.findMany({
+    where: { companyId },
+    include: withPerformedByName,
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    skip: pagination.skip,
+    take: pagination.take,
+  });
+
+  const countAllAuditLogs = prisma.auditLog.count({
+    where: { companyId },
+  });
+
+  const [auditLogsOnPage, totalAuditLogs] = await Promise.all([
+    findAuditLogsOnPage,
+    countAllAuditLogs,
   ]);
-  return { data, total };
+
+  return { data: auditLogsOnPage, total: totalAuditLogs };
 }
 
-export async function findAuditLogById(auditLogId: number): Promise<AuditLog | null> {
-  return await prisma.auditLog.findUnique({ where: { id: auditLogId } });
+export async function findAuditLogById(auditLogId: number) {
+  return await prisma.auditLog.findUnique({
+    where: { id: auditLogId },
+    include: withPerformedByName,
+  });
 }
 
 export async function createAuditLog(
-  data: {
-    entityType: string;
-    entityId: number;
-    action: string;
-    performedById: number;
-    companyId: number;
-    oldValue?: string;
-    newValue?: string;
-  },
-  client: typeof prisma | Prisma.TransactionClient = prisma
+  entry: NewAuditLogEntry,
+  client: PrismaClientOrTx = prisma
 ): Promise<AuditLog> {
-  return await client.auditLog.create({ data });
-}
-
-export async function removeAuditLog(auditLogId: number): Promise<AuditLog> {
-  return await prisma.auditLog.delete({ where: { id: auditLogId } });
+  return await client.auditLog.create({ data: entry });
 }

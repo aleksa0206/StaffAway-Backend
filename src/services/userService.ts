@@ -185,13 +185,13 @@ export async function updateUser(
     if (data.role !== undefined && data.role !== existing.role) {
       await auditLogRepository.createAuditLog(
         {
+          companyId: requestingUser.companyId,
           performedById: requestingUser.userId,
-          entityId: targetUserId,
-          entityType: 'User',
           action: 'ROLE_CHANGE',
+          entityType: 'User',
+          entityId: targetUserId,
           oldValue: existing.role,
           newValue: data.role,
-          companyId: requestingUser.companyId,
         },
         tx
       );
@@ -224,12 +224,12 @@ export async function deleteUser(
 
     await auditLogRepository.createAuditLog(
       {
-        performedById: requestingUser.userId,
-        entityId: targetUserId,
-        entityType: 'User',
-        action: 'DELETE_USER',
-        oldValue: `${existing.firstName} ${existing.lastName} (${existing.email})`,
         companyId: requestingUser.companyId,
+        performedById: requestingUser.userId,
+        action: 'DELETE_USER',
+        entityType: 'User',
+        entityId: targetUserId,
+        oldValue: `${existing.firstName} ${existing.lastName} (${existing.email})`,
       },
       tx
     );
