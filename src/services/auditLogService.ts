@@ -12,10 +12,12 @@ export async function getAllAuditLogs(
 export async function getAuditLogById(auditLogId: number, companyId: number) {
   const auditLog = await auditLogRepository.findAuditLogById(auditLogId);
 
-  if (!auditLog) {
+  if (auditLog === null) {
     throw new NotFoundError('AuditLog');
   }
-  if (auditLog.companyId !== companyId) {
+
+  const belongsToAnotherCompany = auditLog.companyId !== companyId;
+  if (belongsToAnotherCompany) {
     throw new ForbiddenError();
   }
 

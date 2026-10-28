@@ -4,9 +4,13 @@ import { buildPaginationMeta, parsePagination } from '../utils/pagination';
 
 export async function getAllAuditLogsHandler(req: Request, res: Response, next: NextFunction) {
   try {
+    const companyId = req.user!.companyId;
     const pagination = parsePagination(req);
-    const { data, total } = await auditLogService.getAllAuditLogs(req.user!.companyId, pagination);
-    res.json({ data, meta: buildPaginationMeta(total, pagination.page, pagination.limit) });
+
+    const { data: auditLogs, total } = await auditLogService.getAllAuditLogs(companyId, pagination);
+
+    const paginationMeta = buildPaginationMeta(total, pagination.page, pagination.limit);
+    res.json({ data: auditLogs, meta: paginationMeta });
   } catch (err) {
     next(err);
   }
@@ -14,8 +18,11 @@ export async function getAllAuditLogsHandler(req: Request, res: Response, next: 
 
 export async function getAuditLogByIdHandler(req: Request, res: Response, next: NextFunction) {
   try {
+    const companyId = req.user!.companyId;
     const auditLogId = Number(req.params.auditLogId);
-    const auditLog = await auditLogService.getAuditLogById(auditLogId, req.user!.companyId);
+
+    const auditLog = await auditLogService.getAuditLogById(auditLogId, companyId);
+
     res.json(auditLog);
   } catch (err) {
     next(err);

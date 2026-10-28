@@ -58,13 +58,13 @@ export async function updateOwnCompany(
     if (data.name !== undefined && data.name !== existing.name) {
       await auditLogRepository.createAuditLog(
         {
+          companyId,
           performedById,
-          entityId: companyId,
-          entityType: 'Company',
           action: 'UPDATE_COMPANY_NAME',
+          entityType: 'Company',
+          entityId: companyId,
           oldValue: existing.name,
           newValue: data.name,
-          companyId,
         },
         tx
       );
@@ -87,12 +87,12 @@ export async function deleteOwnCompany(companyId: number, role: string, performe
   const deleted = await companyRepository.removeCompany(companyId);
 
   await auditLogRepository.createAuditLog({
-    performedById,
-    entityId: companyId,
-    entityType: 'Company',
-    action: 'DELETE_COMPANY',
-    oldValue: existing.name,
     companyId,
+    performedById,
+    action: 'DELETE_COMPANY',
+    entityType: 'Company',
+    entityId: companyId,
+    oldValue: existing.name,
   });
 
   return deleted;
