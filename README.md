@@ -2,10 +2,12 @@
 
 REST API for StaffAway, a multi-tenant leave management system. Employees request time off, managers and HR approve it, and everyone sees who is away on a shared team calendar. Every company is an isolated tenant in the same database.
 
-Frontend: [StaffAway-Frontend](https://github.com/aleksa0206/StaffAway-Frontend) (Angular).
+- Live: [staffaway.space](https://staffaway.space)
+- Frontend: [StaffAway-Frontend](https://github.com/aleksa0206/StaffAway-Frontend) (Angular)
 
 ## Features
 
+- **Self-service sign-up**: `POST /auth/register` creates a company with its first Hr user, default company settings and two leave types (annual and sick leave). The user can sign in only after confirming the emailed link, which can be resent.
 - **Leave requests**: create, edit and cancel requests, with an approval workflow (`Pending` → `Approval` / `Rejected`, owner can cancel before the leave starts). The API rejects overlapping requests and enforces minimum notice, and leave balances update automatically.
 - **Approval rules**: nobody approves their own request, and managers decide only on their direct reports. Leave types can skip approval entirely.
 - **Status history, comments, file attachments (S3), notifications and audit log.**
@@ -54,8 +56,10 @@ npm run dev                     # http://localhost:4000
 | `JWT_SECRET` | yes | At least 32 characters |
 | `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | yes | Attachment storage |
 | `FRONTEND_URL` | in production | CORS origin and password-reset links. Default `http://localhost:5173` |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | in production | Password-reset emails |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | in production | Verification and password-reset emails |
+| `SMTP_FROM` | no | Sender shown to recipients, e.g. `StaffAway <noreply@example.com>`. Defaults to `SMTP_USER` |
 | `TRUST_PROXY` | no | Number of reverse proxies in front of the app. Default `0`; set it only when a proxy really is there, otherwise clients can spoof their rate-limit IP |
+| `METRICS_TOKEN` | no | At least 16 characters. Enables `GET /metrics` for Prometheus, which must send it as a bearer token |
 
 ## Tests
 
@@ -83,6 +87,10 @@ docker run --env-file .env staffaway-migrate npx prisma migrate deploy
 ```
 
 `GET /health` checks the database connection and returns 503 if the database is unreachable.
+
+## Monitoring
+
+`GET /metrics` exposes Prometheus metrics (request duration per route and status, plus Node.js process metrics) when `METRICS_TOKEN` is set. `docker-compose.yaml` also starts Prometheus on `127.0.0.1:9090`, scraping the API on the host, and Grafana on `127.0.0.1:3000` (admin / admin) with a provisioned StaffAway dashboard.
 
 ## Production on a single host
 
