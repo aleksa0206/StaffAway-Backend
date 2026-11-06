@@ -14,6 +14,28 @@ REST API for StaffAway, a multi-tenant leave management system. Employees reques
 - **Company administration**: departments, leave types, public holidays, work schedules, company settings and API keys.
 - **Roles**: `Employee`, `Manager`, `Hr`, enforced per endpoint and per record.
 
+## Database
+
+Main tables (full schema in `prisma/schema.prisma`). Almost every table has `companyId`, that's how tenants are separated.
+
+```mermaid
+erDiagram
+    Company ||--o{ User : has
+    Company ||--o{ Department : has
+    Company ||--o{ LeaveType : defines
+    Company ||--o| CompanySettings : has
+    Department ||--o{ User : contains
+    User ||--o{ User : manages
+    User ||--o{ LeaveRequest : submits
+    User ||--o{ LeaveBalance : has
+    LeaveType ||--o{ LeaveRequest : "type of"
+    LeaveType ||--o{ LeaveBalance : "balance for"
+    LeaveRequest ||--o{ StatusHistory : "status changes"
+    LeaveRequest ||--o{ Comment : has
+    LeaveRequest ||--o{ Attachment : has
+    User ||--o{ AuditLog : performs
+```
+
 ## Security
 
 - The short-lived JWT access token (15 min) is returned in the response body. The refresh token is opaque, stored hashed, rotated on every use, and sent only as an `httpOnly`, `sameSite=strict` cookie.
