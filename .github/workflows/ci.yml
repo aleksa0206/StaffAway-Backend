@@ -9,20 +9,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: staffaway_test
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=20
-
     # Throwaway values: the database lives only for this job, S3 is faked in tests.
     env:
       NODE_ENV: test
@@ -40,6 +26,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      # Same flag as docker-compose.prod.yaml. Old migrations use `user` instead of `User`,
+      # which only works when table names are case-insensitive. Service containers can't take
+      # a command, so MySQL is started by hand.
+      - name: Start MySQL
+        run: |
+          docker run -d --name mysql -p 3306:3306 \
+            -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=staffaway_test \
+            mysql:8.0 --lower-case-table-names=1
+          for i in $(seq 1 60); do
+            docker exec mysql mysql -uroot -proot -e 'SELECT 1' staffaway_test >/dev/null 2>&1 && exit 0
+            sleep 2
+          done
+          docker logs mysql
+          exit 1
       - uses: actions/setup-node@v4
         with:
           node-version: 24
