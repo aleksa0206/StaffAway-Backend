@@ -1,18 +1,19 @@
 # StaffAway Backend
 
-REST API for StaffAway, a multi-tenant leave management system. Employees request time off, managers and HR approve it, and everyone sees who is away on a shared team calendar. Every company is an isolated tenant in the same database.
+[![CI](https://github.com/aleksa0206/StaffAway-Backend/actions/workflows/ci.yml/badge.svg)](https://github.com/aleksa0206/StaffAway-Backend/actions/workflows/ci.yml)
 
-- Live: [staffaway.space](https://staffaway.space)
-- Frontend: [StaffAway-Frontend](https://github.com/aleksa0206/StaffAway-Frontend) (Angular)
+API for StaffAway, a leave management app for companies. Employees request time off, managers and HR approve it, and everyone sees who is away. Each company is a separate tenant in the same database.
 
-## Features
+Live: [staffaway.space](https://staffaway.space) | Frontend: [StaffAway-Frontend](https://github.com/aleksa0206/StaffAway-Frontend)
 
-- **Self-service sign-up**: `POST /auth/register` creates a company with its first Hr user, default company settings and two leave types (annual and sick leave). The user can sign in only after confirming the emailed link, which can be resent.
-- **Leave requests**: create, edit and cancel requests, with an approval workflow (`Pending` → `Approval` / `Rejected`, owner can cancel before the leave starts). The API rejects overlapping requests and enforces minimum notice, and leave balances update automatically.
-- **Approval rules**: nobody approves their own request, and managers decide only on their direct reports. Leave types can skip approval entirely.
-- **Status history, comments, file attachments (S3), notifications and audit log.**
-- **Company administration**: departments, leave types, public holidays, work schedules, company settings and API keys.
-- **Roles**: `Employee`, `Manager`, `Hr`, enforced per endpoint and per record.
+## What it does
+
+- Sign-up creates a company with its first Hr user, default settings and two leave types. Login works after the email is confirmed
+- Leave requests with an approval flow (`Pending`, `Approval`, `Rejected`, `Cancelled`). Overlapping requests are rejected, minimum notice is checked and balances update automatically
+- Nobody approves their own request, managers only decide for their direct reports
+- Status history, comments, attachments (S3), notifications, audit log
+- Company admin: departments, leave types, holidays, work schedules, settings, API keys
+- Roles `Employee`, `Manager`, `Hr`, checked per endpoint and per record
 
 ## Database
 
@@ -36,20 +37,11 @@ erDiagram
     User ||--o{ AuditLog : performs
 ```
 
-## Security
+## Stack
 
-- The short-lived JWT access token (15 min) is returned in the response body. The refresh token is opaque, stored hashed, rotated on every use, and sent only as an `httpOnly`, `sameSite=strict` cookie.
-- Optional TOTP two-factor authentication.
-- Accounts lock after 5 failed logins. Login timing is the same whether or not the email exists, so it can't be used to discover accounts. Password reset uses hashed, expiring tokens.
-- DB-backed rate limiting, so limits hold across multiple instances.
-- Every query is scoped to the caller's company. Cross-tenant access returns 403/404.
-- Environment variables are validated at startup, and the app refuses to boot with missing or weak config.
+Node.js 24, TypeScript, Express 5, Prisma 7, MySQL 8, Zod, Pino, Jest + Supertest, AWS S3, Nodemailer, Docker.
 
-## Tech stack
-
-Node.js 24, TypeScript, Express 5, Prisma 7 (MariaDB adapter) on MySQL 8, Zod, Pino, Jest + Supertest, AWS S3, Nodemailer, Docker.
-
-Layered architecture: `routes → controllers → services → repositories → Prisma`. Business rules and authorization live in services, and only repositories touch the database.
+Code is split into routes, controllers, services and repositories. Auth is JWT + refresh token in an httpOnly cookie, optional TOTP 2FA and account lockout after 5 failed logins. Rate limiting is stored in the database so it works with more than one instance.
 
 ## Getting started
 
@@ -65,7 +57,7 @@ npm run seed:demo               # optional demo company
 npm run dev                     # http://localhost:4000
 ```
 
-`npm run seed:demo` creates the "Northwind Studio" company and prints an HR, a manager and an employee login. The password for every demo account is `Password123`.
+`npm run seed:demo` creates a demo company and prints an HR, manager and employee login. Password for all of them is `Password123`.
 
 ## Environment variables
 
@@ -80,19 +72,17 @@ npm run dev                     # http://localhost:4000
 | `FRONTEND_URL` | in production | CORS origin and password-reset links. Default `http://localhost:5173` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | in production | Verification and password-reset emails |
 | `SMTP_FROM` | no | Sender shown to recipients, e.g. `StaffAway <noreply@example.com>`. Defaults to `SMTP_USER` |
-| `TRUST_PROXY` | no | Number of reverse proxies in front of the app. Default `0`; set it only when a proxy really is there, otherwise clients can spoof their rate-limit IP |
-| `METRICS_TOKEN` | no | At least 16 characters. Enables `GET /metrics` for Prometheus, which must send it as a bearer token |
+| `TRUST_PROXY` | no | number of proxies in front of the app, leave `0` if there are none |
+| `METRICS_TOKEN` | no | enables `GET /metrics` (bearer token, min 16 characters) |
 
 ## Tests
 
-Integration tests run against a real MySQL database configured in `.env.test` (same variables as above, pointing to a separate test database). S3 is replaced by an in-memory fake.
+Integration tests run against a real MySQL test database from `.env.test`. S3 is replaced with an in-memory fake.
 
 ```bash
-npm run test:migrate   # after every new migration
+npm run test:migrate
 npm test
 ```
-
-CI (GitHub Actions) runs formatting, type checking and the full test suite against MySQL 8 on every push, and builds the Docker image.
 
 ## Docker
 
@@ -112,15 +102,15 @@ docker run --env-file .env staffaway-migrate npx prisma migrate deploy
 
 ## Monitoring
 
-`GET /metrics` exposes Prometheus metrics (request duration per route and status, plus Node.js process metrics) when `METRICS_TOKEN` is set. `docker-compose.yaml` also starts Prometheus on `127.0.0.1:9090`, scraping the API on the host, and Grafana on `127.0.0.1:3000` (admin / admin) with a provisioned StaffAway dashboard.
+With `METRICS_TOKEN` set, `GET /metrics` returns Prometheus metrics. `docker-compose.yaml` also starts Prometheus (`127.0.0.1:9090`) and Grafana (`127.0.0.1:3000`, admin/admin) with a StaffAway dashboard.
 
-## Production on a single host
+## Production
 
-`docker-compose.prod.yaml` runs MySQL, migrations, the API, the frontend (nginx, which also proxies `/api` to the API) and a Cloudflare Tunnel. No ports are published; the tunnel is the only way in. It expects the frontend repo checked out next to this one (`../StaffAway-Frontend`).
+`docker-compose.prod.yaml` runs MySQL, migrations, the API, the frontend and a Cloudflare Tunnel on one server, with no open ports. It expects `../StaffAway-Frontend` next to this repo.
 
-1. In Cloudflare Zero Trust, create a tunnel, point a public hostname (e.g. `app.example.com`) at `http://web:80` and copy the tunnel token.
-2. Create `.env.production` (git-ignored) with the variables from the table above, plus `MYSQL_ROOT_PASSWORD` and `TUNNEL_TOKEN`. Set `FRONTEND_URL=https://app.example.com`. Keep `DB_USER`/`DB_PASSWORD`/`DB_NAME` alphanumeric: they are interpolated into a connection URL.
-3. Start the stack and create the first company and Hr user (the platform administrator):
+1. Create a tunnel in Cloudflare Zero Trust, point your hostname at `http://web:80` and copy the token.
+2. Create `.env.production` with the variables above plus `MYSQL_ROOT_PASSWORD` and `TUNNEL_TOKEN`. Keep `DB_USER`, `DB_PASSWORD` and `DB_NAME` alphanumeric, they go into a connection URL.
+3. Start it and create the first company and admin:
 
 ```bash
 docker compose --env-file .env.production -f docker-compose.prod.yaml up -d --build
@@ -130,4 +120,4 @@ docker compose --env-file .env.production -f docker-compose.prod.yaml run --rm \
   api node dist/scripts/createAdmin.js
 ```
 
-Back up the `mysql_data` volume regularly, e.g. `docker compose ... exec mysql mysqldump ...` to another machine.
+Back up the `mysql_data` volume regularly.
